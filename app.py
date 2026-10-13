@@ -250,8 +250,8 @@ st.caption("AI-Powered Prediction Market Intelligence")
 market_tab, performance_tab = st.tabs(["Market Analysis", "Model Performance"])
 with market_tab:
     st.write("Assess potential trading demand and compare a proposed market with historical Polymarket observations.")
-    # Streamlit forms defer field updates until submission. Individual callbacks
-    # instead erase stale results whenever either input changes (Enter / focus loss).
+    # Keep the displayed analysis while the user edits the inputs.
+    # Only a click on Analyse Market (or the explicit Clear button) resets it.
     def clear_previous_analysis():
         st.session_state.pop("polypulse_analysis", None)
 
@@ -263,11 +263,10 @@ with market_tab:
     question = st.text_area(
         "Market Question *", placeholder="Will Bitcoin exceed $150,000 by December 2027?",
         max_chars=1200, height=90, key="market_question",
-        on_change=clear_previous_analysis,
     )
     event_title = st.text_input(
         "Event Title (optional)", placeholder="Bitcoin Price Predictions", max_chars=300,
-        key="market_event_title", on_change=clear_previous_analysis,
+        key="market_event_title",
     )
     analyse_col, clear_col = st.columns([1, 5])
     with analyse_col:
