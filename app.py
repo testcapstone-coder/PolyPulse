@@ -7,15 +7,34 @@ execute on CPU and are loaded only when a market is analysed. No model training.
 from pathlib import Path
 from time import perf_counter
 
+import numpy as np
 import pandas as pd
 import streamlit as st
 
 from demand_prediction import LABELS, load_classifier, load_published_config, predict_demand
-from historical_search import find_similar_markets, get_extractor, load_reference_data
+from historical_search import clean_text, find_similar_markets, get_extractor, load_reference_data
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 COMPARISON_CSV = BASE_DIR / "results" / "model_comparison.csv"
+
+# Representative questions taken from the supplied historical index. The tab
+# verifies each question against the actual parquet data before displaying it.
+# These are NOT user search statistics or predicted popular future markets.
+POPULAR_QUESTION_EXAMPLES = [
+    ("₿ Crypto", "Bitcoin above 83,600 on October 4, 12PM ET?"),
+    ("₿ Crypto", "Bitcoin Up or Down - October 4, 12PM ET"),
+    ("₿ Crypto", "Ethereum Up or Down on October 3?"),
+    ("₿ Crypto", "Solana Up or Down on October 4?"),
+    ("⚽ Football", "Chesterfield FC vs. Tranmere Rovers FC: O/U 2.5"),
+    ("🎮 Esports", "Counter-Strike: G2 vs Natus Vincere - Map 1 Winner"),
+    ("🏈 NFL", "Cardinals vs. Giants"),
+    ("🗳️ Politics", "Will AS come 2nd place in the next Latvian parliamentary elections?"),
+    ("🗳️ Politics", 'Will Trump say "Somalia" during his Midterm Rally in Ohio?'),
+    ("🎬 Entertainment", 'Will MrBeast say "AI" or "Artificial Intelligence" during his next YouTube video?'),
+    ("🤖 Technology", "Will the next OpenAI GPT Sol model be released on October 3, 2026?"),
+    ("🤖 Technology", "Will OpenAI’s Astra model be released between September 28 and October 4, 2026?"),
+]
 
 st.set_page_config(
     page_title="PolyPulse | Market Intelligence",
@@ -122,6 +141,10 @@ def show_history(results):
             st.code(results["history_error"] or "Unknown error")
         return
 
+    if not history["matches"]:
+        st.info("No historical comparable markets found.")
+        return
+
     count = history["n_comparables"]
     st.caption(
         f"{count} of the top 10 returned historical markets meet the cosine "
@@ -134,25 +157,22 @@ def show_history(results):
         st.write(f"**Suggested topic:** {topic['topic']}")
         st.caption("Topic is a semantic similarity heuristic, not a trained classifier.")
 
-    if not history["matches"]:
-        st.info("No historical markets met the similarity threshold. Try a more specific question.")
-    else:
-        data = pd.DataFrame([
-            {"Historical question": m["question"], "Similarity": 100 * m["similarity"],
-             "Actual volume (USD)": m["volume_usd"]}
-            for m in history["matches"]
-        ])
-        st.dataframe(
-            data, use_container_width=True, hide_index=True,
-            column_config={
-                "Similarity": st.column_config.NumberColumn(format="%.1f%%", help="Cosine similarity displayed as a percentage", step=0.1),
-                "Actual volume (USD)": st.column_config.NumberColumn(format="$%.0f"),
-            },
-        )
-        # A separate detail view retains traceable market IDs and dates.
-        with st.expander("Expand full comparable-market details"):
-            st.dataframe(pd.DataFrame(history["matches"]), hide_index=True,
-                         use_container_width=True)
+    data = pd.DataFrame([
+        {"Historical question": m["question"], "Similarity": 100 * m["similarity"],
+         "Actual volume (USD)": m["volume_usd"]}
+        for m in history["matches"]
+    ])
+    st.dataframe(
+        data, use_container_width=True, hide_index=True,
+        column_config={
+            "Similarity": st.column_config.NumberColumn(format="%.1f%%", help="Cosine similarity displayed as a percentage", step=0.1),
+            "Actual volume (USD)": st.column_config.NumberColumn(format="$%.0f"),
+        },
+    )
+    # A separate detail view retains traceable market IDs and dates.
+    with st.expander("Expand full comparable-market details"):
+        st.dataframe(pd.DataFrame(history["matches"]), hide_index=True,
+                     use_container_width=True)
 
     st.subheader("Historical trading-volume analysis")
     if history["status"] != "ok":
@@ -203,6 +223,113 @@ def show_summary(results):
     st.caption("Market research support only. PolyPulse does not predict event outcomes or recommend market launches.")
 
 
+def popular_questions_table(markets, embeddings, min_similarity=0.58, min_comparables=5):
+    """Rank verified historical examples by the number of close neighbors.
+
+    The seed question's ORIGINAL, saved embedding is used, so visiting this
+    tab does not download or run a Hugging Face model. Each reported median
+    uses at most 10 nearest qualifying market volumes from the stored parquet.
+    """
+    normalized_questions = {}
+    for i, question in enumerate(markets["question"]):
+        normalized_questions.setdefault(clean_text(question).casefold(), i)
+
+    rows = []
+    for category, seed in POPULAR_QUESTION_EXAMPLES:
+        idx = normalized_questions.get(clean_text(seed).casefold())
+        if idx is None:  # Never display an example absent from the actual data.
+            continue
+        query_vector = np.asarray(embeddings[idx], dtype=np.float32)
+        similarities = np.asarray(embeddings @ query_vector, dtype=np.float32)
+        qualified = np.flatnonzero(similarities >= min_similarity)
+        n_similar = len(qualified)
+        if n_similar < min_comparables:
+            continue  # This tab highlights complete historical analyses.
+        nearest = qualified[np.argsort(-similarities[qualified], kind="stable")[:10]]
+        volumes = markets.iloc[nearest]["volume_usd"].to_numpy(dtype=float)
+        rows.append({
+            "Category": category,
+            "Market question": str(markets.iloc[idx]["question"]),
+            "Event title": str(markets.iloc[idx].get("event_title", "") or ""),
+            "Similar markets": n_similar,
+            "Median historical volume (USD)": float(np.median(volumes)),
+        })
+
+    columns = ["Category", "Market question", "Event title", "Similar markets",
+               "Median historical volume (USD)"]
+    return pd.DataFrame(rows, columns=columns).sort_values(
+        ["Similar markets", "Market question"], ascending=[False, True]
+    ).reset_index(drop=True)
+
+
+@st.cache_data(show_spinner=False)
+def load_popular_questions():
+    """Read only historical data and vectors; do not load either HF pipeline."""
+    markets, embeddings, metadata = load_reference_data(str(DATA_DIR))
+    table = popular_questions_table(
+        markets, embeddings,
+        min_similarity=float(metadata.get("default_min_similarity", 0.58)),
+        min_comparables=int(metadata.get("default_min_comparables", 5)),
+    )
+    return table, int(metadata["record_count"]), float(metadata.get("default_min_similarity", 0.58))
+
+
+def show_popular_questions():
+    st.subheader("🔥 Popular questions to explore")
+    st.write(
+        "Try these real historical Polymarket questions in **Market Analysis**. "
+        "Examples are ranked by the number of semantically similar markets "
+        "in the saved 20,000-market index."
+    )
+    try:
+        with st.spinner("Finding the best-covered historical examples…"):
+            table, total_markets, similarity_threshold = load_popular_questions()
+    except Exception as exc:
+        st.warning("Popular historical questions are currently unavailable.")
+        with st.expander("Technical details"):
+            st.code(f"{type(exc).__name__}: {exc}")
+        return
+
+    count_col, examples_col, threshold_col = st.columns(3)
+    count_col.metric("Historical markets indexed", f"{total_markets:,}")
+    examples_col.metric("Ready-to-try questions", len(table))
+    threshold_col.metric("Minimum similarity", f"{similarity_threshold:.0%}")
+    if table.empty:
+        st.info("No matching sample questions were found in the historical dataset.")
+        return
+
+    categories = ["🌐 All categories"] + list(dict.fromkeys(table["Category"]))
+    selection = st.selectbox("Explore a category", categories, key="popular_category_filter")
+    if selection != "🌐 All categories":
+        table = table.loc[table["Category"] == selection]
+
+    st.dataframe(
+        table.drop(columns=["Event title"]), hide_index=True, use_container_width=True,
+        column_config={
+            "Category": st.column_config.TextColumn("Category", width="medium"),
+            "Market question": st.column_config.TextColumn("Market question", width="large"),
+            "Similar markets": st.column_config.NumberColumn(
+                "Similar markets", format="%d", help="Indexed markets with cosine similarity above the configured threshold."
+            ),
+            "Median historical volume (USD)": st.column_config.NumberColumn(
+                "Median historical volume", format="$%.0f",
+                help="Median observed volume among the 10 nearest qualifying markets, or fewer if fewer qualify."
+            ),
+        },
+    )
+    with st.expander("See event titles for these example questions"):
+        st.caption("For a closer match to the values above, enter both the question "
+                   "and its original event title in Market Analysis.")
+        st.dataframe(table[["Market question", "Event title"]],
+                     hide_index=True, use_container_width=True)
+    st.caption(
+        "‘Similar markets’ measures historical semantic coverage, not how many people "
+        "asked a question. Volume is observed historical trading, not a forecast. "
+        "These examples already occur in the reference set and can match themselves; "
+        "use new questions for independent evaluation."
+    )
+
+
 def show_performance():
     st.subheader("Model 1 · Demand prediction")
     st.write("**Fine-tuned model:** [DeBERTa-v3-base demand classifier](https://huggingface.co/2610gnam05/polypulse-deberta-v3-base-demand)")
@@ -247,7 +374,9 @@ def show_performance():
 
 st.title("PolyPulse")
 st.caption("AI-Powered Prediction Market Intelligence")
-market_tab, performance_tab = st.tabs(["Market Analysis", "Model Performance"])
+market_tab, popular_tab, performance_tab = st.tabs(
+    ["Market Analysis", "🔥 Popular Questions", "Model Performance"]
+)
 with market_tab:
     st.write("Assess potential trading demand and compare a proposed market with historical Polymarket observations.")
     # Keep the displayed analysis while the user edits the inputs.
@@ -292,5 +421,7 @@ with market_tab:
         show_history(result)
         st.divider()
         show_summary(result)
+with popular_tab:
+    show_popular_questions()
 with performance_tab:
     show_performance()

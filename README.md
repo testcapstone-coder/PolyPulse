@@ -6,10 +6,10 @@ PolyPulse helps users evaluate the likely *demand category* (Low / Medium / High
 
 ## Features
 
-- **Demand:** Fine-tuned DeBERTa-v3-base Hugging Face `text-classification` pipeline, CPU-only. The exact text contract is `Question: {question.strip()} [SEP] Event: {event_title.strip()}`. It retrieves **training-time label mappings, saved validation decision adjustments, volume cutoffs, and sequence length** from the model owner's published `polypulse_config.json`; there are no hardcoded trained thresholds or invented settings in this app.
+- **Demand:** Fine-tuned DeBERTa-v3-base Hugging Face `text-classification` pipeline, CPU-only. The exact text contract is `Question: {question.strip()} [SEP] Event: {event_title.strip()}`. Label order comes from the model's standard Hugging Face `config.json` (`Low`, `Medium`, `High`). Sequence length uses an explicit published input limit if present, otherwise the model/tokenizer maximum. If validation adjustments or USD-category cutoffs are not published, raw classification scores remain available and missing metadata is clearly indicated rather than invented.
 - **Comparables:** Pretrained all-MiniLM-L6-v2 Hugging Face `feature-extraction` pipeline, CPU-only. Reuses the supplied `historical_search.py`, the existing 384-dimensional vectors, and cosine similarity to find up to 10 historical markets and their *actual stored* trading volumes in USD.
-- **Historical range:** Median and 25th/75th percentiles of the returned sufficiently similar markets only. These statistics disappear if fewer than five comparables meet the threshold.
-- **Two tabs:** Market Analysis and Model Performance (experimental comparison metrics must be provided separately).
+- **Historical range:** Median and 25th/75th percentiles of the returned sufficiently similar markets only. These statistics disappear if fewer than five comparables meet the threshold. With zero matches, the comparable-markets section simply says **No historical comparable markets found** (no empty table or chart).
+- **Three tabs:** Market Analysis, 🔥 Popular Questions, and Model Performance. The Popular Questions tab uses real examples already present in the historical data, with emoji categories, category filters, nearest-neighbor counts, and median historical volumes. Editing the question/event title **preserves** the previous analysis; **Analyse Market** replaces it and **Clear** resets inputs and results.
 - **Independent branches:** Either pipeline may fail without suppressing the other's results. Measured inference durations (excluding initial model load) are displayed.
 
 ## Project layout
@@ -48,26 +48,32 @@ streamlit run app.py
 
 First model use requires internet: Hugging Face downloads the fine-tuned DeBERTa model and the pretrained MiniLM weights **to its model cache**, not into this GitHub repository. Models are not retrained. No original Polymarket source dataset is downloaded by the app. If the fine-tuned model repository is private, configure a read-only `HF_TOKEN` in Streamlit secrets/environment or publish the model publicly.
 
-### Fine-tuned model configuration is a hard dependency
+### Fine-tuned model configuration and the reported missing-cutoffs error
 
-The required Hugging Face model repository is:
+The deployed classifier is loaded directly from the **fine-tuned**, not the base, Hugging Face repository:
 
 [2610gnam05/polypulse-deberta-v3-base-demand](https://huggingface.co/2610gnam05/polypulse-deberta-v3-base-demand)
 
-`demand_prediction.py` calls `hf_hub_download(repo_id=..., filename="polypulse_config.json")` and loads the corresponding fine-tuned model **and tokenizer**, both from the same repository. It never falls back to `microsoft/deberta-v3-base`.
+The repository uses the standard Hugging Face **`config.json`** (provided by the user), with `id2label` mapping `0=Low`, `1=Medium`, `2=High` and `max_position_embeddings=512`. The original application incorrectly requested an additional `polypulse_config.json` and treated historical USD cutoffs as required, causing **every demand classification to fail**. This has been fixed:
 
-**Important validation limitation:** During packaging, the Hugging Face model repository and its published `polypulse_config.json` could not be reached from the development environment (internet resolution failed, and web access could not inspect this specific repository). Consequently, the exact configuration keys and prediction parity with the original Colab notebook have **not** been verified. Rather than fabricate thresholds/bias values, the code accepts a small set of explicit key representations; if it cannot interpret the published values safely, it raises a descriptive `ModelConfigurationError`. The historical MiniLM search branch still runs independently. Before claiming full DeBERTa parity, inspect the published file, compare the implementation with the original training notebook, and run live tests.
+- The classifier pipeline loads the fine-tuned model and tokenizer, then reads `classifier.model.config.to_dict()`; no additional config file is needed.
+- If no saved validation adjustments appear in that configuration, classification uses the **raw** three softmax scores. The interface explicitly labels them as raw and does **not** claim to match any validation-tuned Colab predictions.
+- If no actual historical USD classification thresholds are published, the category volume band is omitted. Historical **observed** comparable-market USD volumes and their quartiles are still shown by MiniLM. No fake cutoffs are computed.
+- The effective sequence limit is chosen from the available published input/tokenizer/model-position limits. The included `max_position_embeddings=512` is an architectural limit, **not** proof that the training notebook used 512-token truncation.
 
-The expected configuration **semantics** (not concrete values) are:
+These changes permit ordinary market questions to be classified, without manufacturing missing research metadata. For exact parity with **validation-adjusted** Google Colab outputs, the actual adjustment values and training-time input limit must be established from the Colab notebook; they cannot be reverse-engineered from the supplied `config.json`.
 
-| Required information | Notes |
-|---|---|
-| Demand label ordering | Model or published config must map the 3 indices to Low / Medium / High. |
-| Maximum sequence length | Read from the published JSON, e.g., a `max_length` field. |
-| Historical USD cutoffs | Two actual cutoffs that separate Low / Medium / High. No fabricated values. |
-| Saved validation decision adjustments | Explicit method (logit bias, additive or multiplicative score) and saved per-class values. |
+### Input/reset behavior
 
-**Do not** substitute example numbers or remove adjustments to make the app run. If the config uses different keys or formulas, adapt `demand_prediction.py` to match the notebook exactly, then compare several specific predictions and classification scores to the Colab outputs. For logits, applying bias to `log(p)` is mathematically equivalent to adding the same bias to logits before softmax. Post-adjustment scores are shown as **model scores, not necessarily calibrated probabilities**.
+Inputs are ordinary Streamlit widgets rather than a `st.form`. Editing the market question or event title **does not** remove the previous analysis; it stays visible while the user prepares the next question. Only clicking **Analyse Market** removes the previous result before running inference and displaying the new analysis. The **Clear** button explicitly empties both input fields and the analysis. Streamlit text widgets commit on focus change or Enter, but these commits do not erase results.
+
+## Popular Questions tab
+
+The **🔥 Popular Questions** tab appears directly beside Market Analysis and draws from up to twelve historical example questions previously identified in the supplied Polymarket index. It checks that each example actually exists in `historical_markets.parquet` and has at least five markets meeting the index's similarity threshold before showing it. Categories include ₿ Crypto, ⚽ Football, 🏈 NFL, 🎮 Esports, 🗳️ Politics, 🎬 Entertainment, and 🤖 Technology.
+
+The **Similar markets** count is computed with cosine similarity between the example's **stored MiniLM vector** and all reference vectors. The **Median historical volume** is computed from the ten nearest qualified markets (or fewer when fewer qualify), reading real `volume_usd` records from the parquet. No new model inference or original-dataset download is required merely to view this tab. A separate expander reveals each example's saved Event Title so users can reproduce its question-and-title query in Market Analysis.
+
+**Important interpretation:** these examples are ranked by **coverage within a curated set**, not by the number of user requests or by top global Polymarket trading volume. There is no user-query-frequency data available. An example stored in the index also matches itself, so this tab is ideal for demonstrating index coverage but not for independent generalization claims. Some examples may disappear if the reference dataset changes.
 
 ## MiniLM history and compatibility
 
@@ -93,7 +99,7 @@ python -m unittest discover -s tests -v
 python -m py_compile app.py demand_prediction.py historical_search.py
 ```
 
-Unit tests check input formatting, mock Low / Medium / High classification scores over **three different domains** (crypto, politics, sports), score summation, saved adjustment math, historical cutoffs, invalid/blank input, cosine ranking/volume attribution, insufficient comparables, and integrity of the 20,000-row embedding archive. **Mock outputs are synthetic test fixtures**, not reported model outputs or accuracy evidence.
+Unit tests check input formatting, mock Low / Medium / High classification scores over **three different domains** (crypto, politics, sports), score summation, missing-optional-config inference, saved adjustment math, historical cutoffs, invalid/blank input, cosine ranking/volume attribution, insufficient comparables, and integrity of the 20,000-row embedding archive. **Mock outputs are synthetic test fixtures**, not reported model outputs or accuracy evidence.
 
 ### Live end-to-end tests (required before final academic submission)
 
@@ -122,9 +128,9 @@ Note that the dataset supporting the **historical similarity index** is a differ
 
 1. Create a new GitHub repository for PolyPulse, commit the contents of **this folder** (including `data/`; each bundled file is below GitHub's usual per-file size limit), and push to GitHub. Do not commit model weights or credentials.
 2. Open [Streamlit Community Cloud](https://share.streamlit.io/), create a new app and connect the repo, branch, and main file **`app.py`**. Select Python 3.11 if the runtime setting is available.
-3. Make sure `polypulse_config.json`, model weights and tokenizer are published in the indicated Hugging Face repository. If private, add a read-only `HF_TOKEN` via Streamlit app secrets.
+3. Make sure `config.json`, model weights and tokenizer are published in the indicated Hugging Face repository. If private, add a read-only `HF_TOKEN` via Streamlit app secrets.
 4. Wait for first-run model download; the app then reuses cached pipelines. Observe available RAM: the CPU DeBERTa model is relatively large, so free-tier memory limits may still cause model loading failures. If so, evaluate the Community Cloud memory budget and a suitable upgraded host; do not change models or silently simplify scoring just to hide the limitation.
-5. Run the three live test questions, check all metrics/volumes and take screenshots. Confirm model adjustments and outputs against the original Colab notebook.
+5. Run the three live test questions, check all metrics/volumes and take screenshots. If the notebook used adjustments, obtain them before asserting matching tuned predictions.
 
 ### Academic deliverables still to supply separately
 
