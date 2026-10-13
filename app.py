@@ -27,8 +27,8 @@ st.set_page_config(
 @st.cache_resource(show_spinner=False)
 def classifier_resources():
     """One fine-tuned DeBERTa pipeline and its published config per app process."""
-    config = load_published_config()  # Download from the actual fine-tuned repo.
-    classifier = load_classifier()
+    classifier = load_classifier()  # Loads model + its standard config.json from HF.
+    config = load_published_config()
     return classifier, config
 
 
@@ -90,20 +90,26 @@ def show_demand(results):
         return
 
     st.metric("Predicted market demand", pred["label"].upper())
-    st.write(f"**Historical category volume band:** {pred['volume_band']}")
-    st.caption(
-        "This band comes from the published historical classification cutoffs; "
-        "it is not an exact forecast of future USD trading volume."
-    )
-    st.markdown("**Demand classification scores (after the saved validation decision adjustment)**")
+    if pred["volume_band"]:
+        st.write(f"**Historical category volume band:** {pred['volume_band']}")
+        st.caption("Historical classification thresholds, not an exact USD-volume forecast.")
+    else:
+        st.caption("Historical category USD cutoffs are not published in the model config; "
+                   "the actual volumes of similar markets are shown below instead.")
+    if pred["adjustments_available"]:
+        st.markdown("**Demand classification scores (with published decision adjustments)**")
+    else:
+        st.markdown("**Demand classification scores (raw model output)**")
     for label in LABELS:
         score = pred["model_scores"][label]
         st.progress(min(max(score, 0.0), 1.0), text=f"{label}: {score:.1%}")
     st.caption(
         "These are model scores, not necessarily calibrated probabilities. "
-        f"Adjustment method: {pred['adjustment_method']}. "
-        f"Measured classifier inference: {results['demand_seconds']:.2f} s "
-        "(excludes initial download and model loading)."
+        + ("Published validation adjustments applied. " if pred["adjustments_available"]
+           else "No validation adjustments are in config.json; scores are unadjusted "
+                "and may differ from Colab-tuned results. ")
+        + f"Measured classifier inference: {results['demand_seconds']:.2f} s "
+          "(excludes initial download and model loading)."
     )
 
 
@@ -244,16 +250,34 @@ st.caption("AI-Powered Prediction Market Intelligence")
 market_tab, performance_tab = st.tabs(["Market Analysis", "Model Performance"])
 with market_tab:
     st.write("Assess potential trading demand and compare a proposed market with historical Polymarket observations.")
-    with st.form("analyse_market_form"):
-        question = st.text_area(
-            "Market Question *", placeholder="Will Bitcoin exceed $150,000 by December 2027?",
-            max_chars=1200, height=90,
-        )
-        event_title = st.text_input(
-            "Event Title (optional)", placeholder="Bitcoin Price Predictions", max_chars=300
-        )
-        submitted = st.form_submit_button("Analyse Market", type="primary")
+    # Streamlit forms defer field updates until submission. Individual callbacks
+    # instead erase stale results whenever either input changes (Enter / focus loss).
+    def clear_previous_analysis():
+        st.session_state.pop("polypulse_analysis", None)
+
+    def clear_everything():
+        clear_previous_analysis()
+        st.session_state["market_question"] = ""
+        st.session_state["market_event_title"] = ""
+
+    question = st.text_area(
+        "Market Question *", placeholder="Will Bitcoin exceed $150,000 by December 2027?",
+        max_chars=1200, height=90, key="market_question",
+        on_change=clear_previous_analysis,
+    )
+    event_title = st.text_input(
+        "Event Title (optional)", placeholder="Bitcoin Price Predictions", max_chars=300,
+        key="market_event_title", on_change=clear_previous_analysis,
+    )
+    analyse_col, clear_col = st.columns([1, 5])
+    with analyse_col:
+        submitted = st.button("Analyse Market", type="primary", use_container_width=True)
+    with clear_col:
+        st.button("Clear", on_click=clear_everything)
+
     if submitted:
+        # Never show an older market's results during a new analysis.
+        clear_previous_analysis()
         if not question.strip():
             st.error("Please enter a Market Question before analysing.")
         else:

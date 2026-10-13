@@ -1,9 +1,9 @@
-"""PolyPulse demand classifier: published fine-tuned DeBERTa, not the base model.
+"""PolyPulse demand classifier using the published fine-tuned DeBERTa model.
 
-No model training, hand-entered thresholds or inferred validation biases occur here.
-The notebook's inference contract must be documented in the published
-`polypulse_config.json`; unfamiliar config formats fail visibly instead of
-silently producing untuned predictions.
+The Hugging Face repository's standard config.json supplies label IDs and
+architectural input length. Historical demand cutoffs and validation decision
+adjustments are OPTIONAL: neither appears in the user's published config.json.
+Without them, show raw model predictions and make missing metadata explicit.
 """
 
 from functools import lru_cache
@@ -79,17 +79,36 @@ def label_order(config, model_id2label):
     return ordered
 
 
-def max_sequence_length(config):
-    length = _find(config, "max_length", "max_seq_length", "max_sequence_length", "max_input_length", "max_input_tokens")
-    if length is None or isinstance(length, bool):
-        raise ModelConfigurationError("Published config is missing max sequence length.")
-    try:
-        length_int = int(length)
-    except (TypeError, ValueError) as exc:
-        raise ModelConfigurationError("Invalid max sequence length in published config.") from exc
-    if length_int < 8 or length_int > 8192 or float(length) != length_int:
-        raise ModelConfigurationError("Invalid max sequence length in published config.")
-    return length_int
+def max_sequence_length(config, tokenizer=None):
+    """Resolve a safe inference limit without pretending it is the training limit.
+
+    Prefer an explicit trained max_length when provided; otherwise use tokenizer
+    model_max_length and the model's max_position_embeddings (512 in config.json).
+    The architectural limit is NOT evidence of the actual Colab truncation value.
+    """
+    explicit = _find(config, "max_length", "max_seq_length", "max_sequence_length",
+                     "max_input_length", "max_input_tokens")
+    architectural = _find(config, "max_position_embeddings")
+    tokenizer_limit = getattr(tokenizer, "model_max_length", None) if tokenizer else None
+
+    def valid_int(value):
+        if isinstance(value, bool) or value is None:
+            return None
+        try:
+            parsed = int(value)
+            if float(value) != parsed or not 8 <= parsed <= 8192:
+                return None
+            return parsed
+        except (TypeError, ValueError, OverflowError):
+            return None
+
+    if explicit is not None and valid_int(explicit) is None:
+        raise ModelConfigurationError("Invalid explicit max sequence length in model config.")
+    candidates = [x for x in (valid_int(explicit), valid_int(architectural),
+                                valid_int(tokenizer_limit)) if x is not None]
+    if not candidates:
+        raise ModelConfigurationError("Could not determine a safe model input length.")
+    return min(candidates)
 
 
 def volume_cutoffs(config):
@@ -100,7 +119,7 @@ def volume_cutoffs(config):
     """
     source = _find(config, "volume_thresholds_usd", "usd_volume_thresholds", "volume_thresholds", "volume_cutoffs_usd", "volume_bins_usd")
     if source is None:
-        raise ModelConfigurationError("Published config is missing historical USD volume cutoffs.")
+        return None  # Optional presentation metadata, never a blocker to prediction.
     if isinstance(source, (tuple, list)) and len(source) == 2:
         raw = source
     elif isinstance(source, dict):
@@ -115,7 +134,7 @@ def volume_cutoffs(config):
         ]
         raw = next(((source[a], source[b]) for a, b in pairs if a in source and b in source), None)
         if raw is None:
-            raise ModelConfigurationError("Unknown USD volume threshold keys; inspect polypulse_config.json.")
+            raise ModelConfigurationError("Unknown USD volume threshold keys in model config.")
     else:
         raise ModelConfigurationError("Unknown USD volume cutoff representation.")
     try:
@@ -143,7 +162,10 @@ def _bias_vector(raw, order):
 
 
 def decision_rule(config, order):
-    """Read *explicit* validation adjustments and their meaning; no defaults."""
+    """Apply published adjustments if present; otherwise use raw model scores.
+
+    No synthetic validation adjustment or claim of Colab parity is introduced.
+    """
     specs = [
         ("logit_bias", "logit_bias"),
         ("logit_biases", "logit_bias"),
@@ -163,9 +185,7 @@ def decision_rule(config, order):
     found = [(key, value, implied) for key, implied in specs if (value := _find(config, key)) is not None]
     explicit_method = _find(config, "adjustment_method", "decision_adjustment_method", "score_adjustment_method", "decision_rule")
     if not found:
-        if str(explicit_method).lower() in ("none", "no_adjustment", "argmax"):
-            return "none", np.zeros(3)
-        raise ModelConfigurationError("Validation decision adjustments/method are missing from published config.")
+        return "none", np.zeros(3, dtype=float)
     key, raw, implied = found[0]
     if len(found) > 1 and found[1][1] != raw:
         raise ModelConfigurationError("Multiple conflicting adjustment fields; inspect published config.")
@@ -232,13 +252,15 @@ def volume_band(label, cutoffs):
 
 @lru_cache(maxsize=1)
 def load_published_config():
-    from huggingface_hub import hf_hub_download
+    """Read the real config.json loaded with the hosted fine-tuned model.
 
-    path = hf_hub_download(repo_id=MODEL_ID, filename="polypulse_config.json")
-    with open(path, encoding="utf-8") as handle:
-        config = json.load(handle)
+    There is no separate polypulse_config.json in the user's supplied files.
+    This reuses the already cached classifier rather than downloading a second
+    configuration file or replacing the fine-tuned checkpoint with base weights.
+    """
+    config = load_classifier().model.config.to_dict()
     if not isinstance(config, dict):
-        raise ModelConfigurationError("Published config must be a JSON object.")
+        raise ModelConfigurationError("Hugging Face model config must be a JSON object.")
     return config
 
 
@@ -252,17 +274,17 @@ def load_classifier():
 
 
 def predict_demand(question, event_title="", classifier=None, config=None):
-    """Run one CPU prediction and apply published validation decision adjustment.
+    """Run CPU prediction using published class IDs and available adjustments.
 
-    Optional injected classifier/config enable pure unit tests; the Streamlit app
-    does not override the published configuration.
+    Optional injected classifier/config enable unit testing without downloading
+    model weights. Missing volume cutoffs never prevent demand classification.
     """
     if config is None:
         config = load_published_config()
     if classifier is None:
         classifier = load_classifier()
     order = label_order(config, classifier.model.config.id2label)
-    length = max_sequence_length(config)
+    length = max_sequence_length(config, getattr(classifier, "tokenizer", None))
     bounds = volume_cutoffs(config)
     adjustment_method, adjustment_values = decision_rule(config, order)
     output = classifier(model_text(question, event_title), truncation=True,
@@ -294,7 +316,12 @@ def predict_demand(question, event_title="", classifier=None, config=None):
         "model_scores": {label: float(adjusted[i]) for i, label in enumerate(order)},
         "raw_model_scores": {label: float(ordered_raw[i]) for i, label in enumerate(order)},
         "adjustment_method": adjustment_method,
-        "volume_band": volume_band(predicted, bounds),
-        "volume_thresholds_usd": list(bounds),
+        "adjustments_available": bool(_find(config, "logit_bias", "logit_biases",
+            "class_logit_biases", "best_logit_biases", "validation_logit_biases",
+            "score_bias", "score_biases", "class_score_biases", "probability_adjustments",
+            "probability_multipliers", "class_multipliers", "decision_adjustments",
+            "validation_adjustments", "class_adjustments")),
+        "volume_band": volume_band(predicted, bounds) if bounds else None,
+        "volume_thresholds_usd": list(bounds) if bounds else None,
         "max_sequence_length": length,
     }
