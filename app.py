@@ -467,10 +467,10 @@ def show_performance():
     st.divider()
     st.subheader("Model 3 · Question validity")
     st.write(
-        f"**Pretrained model:** [DeBERTa-v3-xsmall NLI validator]"
+        f"**Pretrained model:** [ModernBERT-base zero-shot NLI validator]"
         f"(https://huggingface.co/{VALIDATOR_MODEL_ID})"
     )
-    st.write("**Hugging Face execution:** NLI sequence classification · CPU · no fine-tuning")
+    st.write("**Hugging Face execution:** zero-shot NLI sequence classification · CPU · no PolyPulse fine-tuning")
     st.write(
         "This model runs first. It independently evaluates positive and negative "
         "prediction-market validity hypotheses. Only questions that pass the gate "

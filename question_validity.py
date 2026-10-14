@@ -1,6 +1,6 @@
 """PolyPulse prediction-market question validity gate.
 
-This module uses a dedicated Hugging Face NLI model to decide whether a user's
+This module uses a dedicated Hugging Face zero-shot NLI model to decide whether a user's
 input is sufficiently clear and resolvable to continue to PolyPulse demand
 prediction and historical analysis.
 
@@ -13,7 +13,7 @@ import re
 
 import numpy as np
 
-MODEL_ID = "MoritzLaurer/DeBERTa-v3-xsmall-mnli-fever-anli-ling-binary"
+MODEL_ID = "MoritzLaurer/ModernBERT-base-zeroshot-v2.0"
 MAX_LENGTH = 256
 
 # The two hypotheses are evaluated independently with the NLI model.
@@ -59,11 +59,15 @@ def _entailment_index(model):
 
 @lru_cache(maxsize=1)
 def load_validator():
-    """Load the dedicated NLI validator once per Python process, on CPU."""
+    """Load the dedicated ModernBERT NLI validator once per Python process, on CPU."""
+    import torch
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-    model = AutoModelForSequenceClassification.from_pretrained(MODEL_ID)
+    model = AutoModelForSequenceClassification.from_pretrained(
+        MODEL_ID,
+        torch_dtype=torch.float32,
+    )
     model.eval()
     return tokenizer, model
 
@@ -140,5 +144,5 @@ def validate_market_question(question, event_title="", validator=None):
         "validity_threshold": float(VALIDITY_THRESHOLD),
         "minimum_valid_entailment": float(MIN_VALID_ENTAILMENT),
         "model_id": MODEL_ID,
-        "method": "dual-hypothesis NLI validity gate",
+        "method": "ModernBERT dual-hypothesis zero-shot NLI validity gate",
     }
