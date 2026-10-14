@@ -1,54 +1,131 @@
 {
-  "project": "PolyPulse \u2014 Historical Market Analysis",
-  "dataset_id": "SII-WANGZJ/Polymarket_data",
-  "dataset_filename": "markets.parquet",
-  "dataset_revision": "73bc1adc43b05709d2cde3bf41ef4111eda3f4fc",
-  "dataset_file_sha256": "ce153f7ffa523911dc46d7a8cbcf324f4fd7a39e1bca0b6d396ee572595ad35f",
-  "dataset_published_cutoff_utc": "2026-10-04T23:59:59Z",
-  "dataset_published_cutoff_note": "Cutoff documented by source README; dataset may be updated later.",
-  "generated_at_utc": "2026-10-13T22:12:15.885336+00:00",
-  "reference_cutoff_utc": "2026-10-04T23:59:59+00:00",
-  "split_exclusion_verified": false,
-  "splits_zip_sha256": null,
-  "split_sizes": null,
-  "heldout_excluded": 0,
-  "matched_training_priority_candidates": 0,
-  "selection_method": "training-set matches prioritized, then latest complete eligible markets, stable by ID",
-  "filters": [
-    "closed=true",
-    "nonempty id and question",
-    "positive finite USD volume",
-    "valid created_at, end_date, updated_at",
-    "created_at <= end_date <= reference_cutoff",
-    "updated_at <= reference_cutoff",
-    "unique market id and condition_id",
-    "exclude validation/test identifiers and questions when ZIP provided"
-  ],
-  "filter_counts": {
-    "source_rows": 4049900,
-    "valid_closed_positive_volume_dates": 2228274,
-    "as_of_cutoff": 2182875,
-    "deduplicated": 2182875,
-    "after_heldout_exclusion": 2182875,
-    "reference_index": 20000
-  },
-  "requested_record_count": 20000,
-  "record_count": 20000,
+  "project": "PolyPulse diversified historical reference",
+  "export_version": 2,
+  "generated_at_utc": "2026-10-14T00:20:39.766283+00:00",
+  "reference_cutoff_utc": "2026-10-14T00:00:00+00:00",
+  "requested_record_count": 50000,
+  "record_count": 50000,
   "model_id": "sentence-transformers/all-MiniLM-L6-v2",
   "model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
   "model_fine_tuned": false,
-  "pipeline": "huggingface feature-extraction",
-  "text_preprocessing": "Unicode NFKC; whitespace collapse; Question: {q} | Event: {title} if title is present",
-  "pooling": "attention-masked mean over last hidden states",
-  "embedding_normalization": "row-wise L2",
+  "pipeline": "Hugging Face feature-extraction",
+  "max_input_tokens": 256,
   "embedding_dimension": 384,
   "embedding_dtype": "float32",
-  "max_input_tokens": 256,
-  "default_min_similarity": 0.58,
-  "default_min_comparables": 5,
-  "statistics_population": "returned top_k matches that meet threshold",
-  "embedding_build_seconds": 393.162,
-  "resolution_time_limitation": "end_date is not a verified actual settlement timestamp",
-  "as_of_volume_limitation": "Latest dataset volume is not a reconstructable historical volume-as-of earlier cutoff; use a contemporaneous snapshot for earlier tests.",
-  "index_size_verified": true
+  "pooling": "attention-mask mean",
+  "embedding_normalization": "L2",
+  "text_preprocessing": "Unicode NFKC whitespace; Question: {q} | Event: {title} when provided",
+  "market_files": [
+    "historical_markets_part_001.parquet",
+    "historical_markets_part_002.parquet",
+    "historical_markets_part_003.parquet",
+    "historical_markets_part_004.parquet",
+    "historical_markets_part_005.parquet"
+  ],
+  "embedding_files": [
+    "market_embeddings_part_001.npy",
+    "market_embeddings_part_002.npy",
+    "market_embeddings_part_003.npy",
+    "market_embeddings_part_004.npy",
+    "market_embeddings_part_005.npy"
+  ],
+  "source_revisions": {
+    "primary/markets.parquet": {
+      "repo": "SII-WANGZJ/Polymarket_data",
+      "filename": "markets.parquet",
+      "revision": "73bc1adc43b05709d2cde3bf41ef4111eda3f4fc",
+      "size_bytes": 545510579,
+      "schema": "id: string not null\nquestion: string not null\nslug: string not null\ncondition_id: string not null\ntoken1: string not null\ntoken2: string not null\nanswer1: string not null\nanswer2: string not null\nclosed: uint8 not null\nactive: uint8 not null\narchived: uint8 not null\noutcome_prices: string not null\nvolume: double not null\nevent_id: string not null\nevent_slug: string not null\nevent_title: string not null\ncreated_at: timestamp[ms, tz=UTC] not null\nend_date: timestamp[ms, tz=UTC] not null\nupdated_at: timestamp[ms, tz=UTC] not null\nneg_risk: uint8 not null"
+    },
+    "marketlens/polymarket_resolved_markets.parquet": {
+      "repo": "marketlens/polymarket-resolved-markets",
+      "filename": "polymarket_resolved_markets.parquet",
+      "revision": "42232edb2e84a1dab9422af5d749664d6bb8ae09",
+      "size_bytes": 83968041,
+      "schema": "market_id: string\nquestion: string\nseries_slug: string\nseries_title: string\nseries_recurrence: string\ncategory: string\nsubtype: string\nmarket_type: string\noutcome_names: list<element: string>\n  child 0, element: string\ntoken_ids: list<element: string>\n  child 0, element: string\nwinning_outcome: string\nwinning_outcome_index: int32\nopen_time_ms: int64\nclose_time_ms: int64\nresolved_at_ms: int64\nresolved_date: date32[day]\nvolume_usd: double\nliquidity_usd: double\nstrike: double\nstrike_upper: double\nstrike_direction: string\ntick_size: double"
+    },
+    "gregoire/markets.parquet": {
+      "repo": "vgregoire/polymarket-users",
+      "filename": "markets.parquet",
+      "revision": "91ddb961b090de18fd79e79edd8fa15f36ca11b9",
+      "size_bytes": 22591844,
+      "schema": "market_id: int64\nquestion: large_string\ncategory: large_string\ncategory_original: large_string\nevent_id: large_string\noutcome_yes: bool\nmarket_start_time: timestamp[ns, tz=UTC]\nclose_time: timestamp[ns, tz=UTC]\nexpiration_time: timestamp[ns, tz=UTC]\ncan_close_early: bool\ntaker_base_fee: int64\nhas_fee: bool"
+    },
+    "gregoire/events.parquet": {
+      "repo": "vgregoire/polymarket-users",
+      "filename": "events.parquet",
+      "revision": "91ddb961b090de18fd79e79edd8fa15f36ca11b9",
+      "size_bytes": 7581274,
+      "schema": "event_id: large_string\nevent_ticker: large_string\nseries_id: large_string\ntitle: large_string\ncategory: large_string\ncategory_original: large_string\nevent_start_time: timestamp[ns, tz=UTC]\nmutually_exclusive: bool\nvolume: double\nopen_interest: double\nn_questions: uint32\nmulti_category_flag: bool"
+    }
+  },
+  "filters": [
+    "market-level USD volume > 0 and finite",
+    "closed=true for primary source",
+    "actual Marketlens resolved_at <= cutoff when available",
+    "otherwise primary end_date <= cutoff",
+    "created_at <= completed date <= cutoff",
+    "market-level duplicate removal by condition ID, then market ID",
+    "validation/test exclusions when original ZIP provided"
+  ],
+  "sampling": "Deterministic candidate hash by topic/year; target quotas; market structure/year diversity",
+  "topic_weights_requested": {
+    "Politics": 0.15,
+    "Cryptocurrency": 0.15,
+    "Sports": 0.15,
+    "Economics": 0.15,
+    "Technology": 0.13,
+    "Entertainment": 0.12,
+    "Science": 0.1,
+    "Other": 0.05
+  },
+  "topic_counts": {
+    "Cryptocurrency": 7500,
+    "Economics": 7500,
+    "Sports": 7500,
+    "Politics": 7500,
+    "Technology": 6500,
+    "Entertainment": 6000,
+    "Science": 5000,
+    "Other": 2500
+  },
+  "topic_source_counts": {
+    "vgregoire_market": 28202,
+    "keyword_heuristic": 15253,
+    "marketlens": 3865,
+    "unknown": 2500,
+    "vgregoire_event": 180
+  },
+  "market_structure_counts": {
+    "other_event": 30111,
+    "price_target": 7445,
+    "short_term_direction": 6692,
+    "winner": 4629,
+    "election_politics": 1123
+  },
+  "market_source_counts": {
+    "SII-WANGZJ/Polymarket_data": 49576,
+    "marketlens/polymarket-resolved-markets": 424
+  },
+  "filter_counts": {
+    "primary_raw_rows": 4049900,
+    "primary_valid_closed_positive_before_cutoff": 2228274,
+    "primary_completed_by_cutoff": 2195720,
+    "heldout_dropped_primary": 0,
+    "heldout_dropped_marketlens": 0,
+    "marketlens_valid_resolved_rows": 229748,
+    "deduplicated_candidate_pool": 164436,
+    "selected_reference_rows": 50000
+  },
+  "splits_exclusion_verified": false,
+  "splits_zip_sha256": null,
+  "split_sizes": null,
+  "training_priority": "split training IDs favored when available",
+  "min_similarity_default": 0.52,
+  "min_comparables_default": 5,
+  "display_top_k_default": 10,
+  "statistics_top_n_default": 30,
+  "volume_provenance": "Market-level USD lifetime volume in source snapshot, never predicted or summed across sources",
+  "as_of_limitation": "Cannot reconstruct earlier volume-as-of-cutoff from later source snapshot; use contemporaneous snapshot for strict backtests",
+  "resolution_limitation": "Primary end_date alone is scheduled end, not proof of settlement; Marketlens has observed resolution dates"
 }
