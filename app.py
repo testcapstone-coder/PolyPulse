@@ -10,6 +10,7 @@ from html import escape
 from pathlib import Path
 from time import perf_counter
 
+import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -93,13 +94,147 @@ html, body, .stApp,
     color: var(--pp-text) !important;
 }
 
+/* ------------------------------------------------------------------
+   Text visibility guardrails.
+   Streamlit/BaseWeb can retain dark-theme text colors inside nested
+   components even after the page background is forced to light mode.
+   These explicit selectors keep every user-facing text element readable.
+   ------------------------------------------------------------------ */
+
+.stApp [data-testid="stMarkdownContainer"],
+.stApp [data-testid="stMarkdownContainer"] p,
+.stApp [data-testid="stMarkdownContainer"] li,
+.stApp [data-testid="stMarkdownContainer"] strong,
+.stApp [data-testid="stMarkdownContainer"] em,
+.stApp [data-testid="stMarkdownContainer"] code,
+.stApp [data-testid="stCaptionContainer"],
+.stApp [data-testid="stCaptionContainer"] p,
+.stApp [data-testid="stWidgetLabel"],
+.stApp [data-testid="stWidgetLabel"] p,
+.stApp label,
+.stApp summary,
+.stApp details,
+.stApp [role="radiogroup"],
+.stApp [role="option"],
+.stApp [data-baseweb="select"],
+.stApp [data-baseweb="select"] *,
+.stApp [data-baseweb="popover"] *,
+.stApp [data-testid="stExpander"] *,
+.stApp [data-testid="stAlert"] *,
+.stApp [data-testid="stToast"] * {
+    color: var(--pp-text) !important;
+}
+
+/* Captions and secondary explanatory copy remain visibly muted, never hidden. */
+.stApp [data-testid="stCaptionContainer"],
+.stApp [data-testid="stCaptionContainer"] *,
+.stApp small {
+    color: var(--pp-muted) !important;
+    opacity: 1 !important;
+}
+
+/* Form control text, placeholders and dropdown values. */
+.stApp input,
+.stApp textarea,
+.stApp [data-baseweb="input"] input,
+.stApp [data-baseweb="textarea"] textarea,
+.stApp [data-baseweb="select"] input,
+.stApp [data-baseweb="select"] div {
+    color: var(--pp-text) !important;
+    -webkit-text-fill-color: var(--pp-text) !important;
+}
+
+.stApp input::placeholder,
+.stApp textarea::placeholder {
+    color: #8b98ac !important;
+    -webkit-text-fill-color: #8b98ac !important;
+    opacity: 1 !important;
+}
+
+/* Buttons: force nested text/icon visibility as BaseWeb may style descendants. */
+.stApp div.stButton > button *,
+.stApp button[kind="secondary"] *,
+.stApp button[kind="tertiary"] * {
+    color: #243047 !important;
+    opacity: 1 !important;
+}
+
+.stApp div.stButton > button[kind="primary"] *,
+.stApp button[kind="primary"] * {
+    color: #ffffff !important;
+    opacity: 1 !important;
+}
+
+/* Tabs: explicitly style every descendant so titles such as
+   "Explore Questions" stay visible in both selected and unselected states. */
+.stApp button[data-baseweb="tab"],
+.stApp button[data-baseweb="tab"] *,
+.stApp button[data-baseweb="tab"] p,
+.stApp button[data-baseweb="tab"] span,
+.stApp button[data-baseweb="tab"] div {
+    color: #4d5b70 !important;
+    -webkit-text-fill-color: #4d5b70 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.stApp button[data-baseweb="tab"][aria-selected="true"],
+.stApp button[data-baseweb="tab"][aria-selected="true"] *,
+.stApp button[data-baseweb="tab"][aria-selected="true"] p,
+.stApp button[data-baseweb="tab"][aria-selected="true"] span,
+.stApp button[data-baseweb="tab"][aria-selected="true"] div {
+    color: #263fbc !important;
+    -webkit-text-fill-color: #263fbc !important;
+    opacity: 1 !important;
+}
+
+/* Expander summary and alert text can otherwise inherit theme colors. */
+.stApp details summary,
+.stApp details summary *,
+.stApp [data-testid="stExpander"] summary,
+.stApp [data-testid="stExpander"] summary * {
+    color: #334155 !important;
+    -webkit-text-fill-color: #334155 !important;
+    opacity: 1 !important;
+}
+
+/* Metrics */
+.stApp [data-testid="stMetricLabel"],
+.stApp [data-testid="stMetricLabel"] *,
+.stApp [data-testid="stMetricDelta"],
+.stApp [data-testid="stMetricDelta"] * {
+    color: #68758a !important;
+    opacity: 1 !important;
+}
+
+.stApp [data-testid="stMetricValue"],
+.stApp [data-testid="stMetricValue"] * {
+    color: #1e293b !important;
+    opacity: 1 !important;
+}
+
+/* Links remain clearly identifiable on light surfaces. */
+.stApp a,
+.stApp a:visited {
+    color: #3156c8 !important;
+    text-decoration-color: rgba(49, 86, 200, 0.35) !important;
+}
+
 .block-container {
     max-width: 1220px;
     padding-top: 1.7rem;
     padding-bottom: 3.5rem;
 }
 
-h1, h2, h3, h4, h5, h6,
+h1, h2, h3, h4, h5, h6 {
+    color: #182235 !important;
+}
+
+.stApp p,
+.stApp label {
+    color: #334155;
+}
+
 p, label, span, div {
     color: inherit;
 }
@@ -231,16 +366,22 @@ div[data-baseweb="tab-list"] {
     border: 1px solid #d4deec !important;
     border-radius: 14px !important;
     background: #eaf0f8 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: thin;
 }
 
 button[data-baseweb="tab"] {
     min-height: 42px !important;
+    min-width: max-content !important;
     border-radius: 10px !important;
-    padding: 0.55rem 0.95rem !important;
-    color: #5b687c !important;
+    padding: 0.55rem 1.05rem !important;
+    color: #4d5b70 !important;
     font-weight: 720 !important;
     background: transparent !important;
     border: 0 !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
 }
 
 button[data-baseweb="tab"][aria-selected="true"] {
@@ -392,6 +533,93 @@ button[data-baseweb="tab"] > div[data-testid="stMarkdownContainer"] > p {
     border-top: 1px solid #e1e8f1;
     font-size: 0.79rem;
 }
+
+
+/* Historical-comparable list */
+.pp-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.62rem;
+    margin: 0.35rem 0 0.75rem 0;
+}
+
+.pp-history-row {
+    display: grid;
+    grid-template-columns: 54px minmax(0, 1fr) 112px 145px;
+    gap: 0.9rem;
+    align-items: center;
+    padding: 0.88rem 0.95rem;
+    border: 1px solid #dce5f0;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 2px 9px rgba(42, 57, 89, 0.035);
+}
+
+.pp-history-rank {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 11px;
+    background: #eef2ff;
+    color: #4054b8;
+    font-size: 0.80rem;
+    font-weight: 820;
+}
+
+.pp-history-question {
+    color: #1e293b;
+    font-size: 0.93rem;
+    line-height: 1.4;
+    font-weight: 720;
+}
+
+.pp-history-meta {
+    color: #7a8799;
+    font-size: 0.77rem;
+    margin-top: 0.22rem;
+}
+
+.pp-history-stat-label {
+    color: #8390a4;
+    font-size: 0.70rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.16rem;
+}
+
+.pp-history-stat-value {
+    color: #24324a;
+    font-size: 0.92rem;
+    font-weight: 790;
+}
+
+.pp-history-similarity {
+    color: #3156c8;
+}
+
+.pp-chart-shell {
+    border: 1px solid #dce5f0;
+    border-radius: 16px;
+    padding: 0.75rem 0.85rem 0.35rem 0.85rem;
+    background: #ffffff;
+    box-shadow: 0 3px 12px rgba(42, 57, 89, 0.04);
+    margin-top: 0.35rem;
+}
+
+@media (max-width: 800px) {
+    .pp-history-row {
+        grid-template-columns: 46px minmax(0, 1fr);
+    }
+
+    .pp-history-row > div:nth-child(3),
+    .pp-history-row > div:nth-child(4) {
+        grid-column: 2;
+        display: inline-block;
+    }
+}
+
 
 /* Alerts, tables, expanders */
 .stAlert {
@@ -795,47 +1023,112 @@ def show_history(results, show_title=True):
         )
         return
 
+    # ------------------------------------------------------------------
+    # Closest historical markets: compact ranked cards instead of a dense table.
+    # ------------------------------------------------------------------
     st.markdown("#### Closest historical markets")
-    data = pd.DataFrame(
-        [
+    st.caption(
+        "The strongest semantic matches to the proposed market, ranked by cosine similarity."
+    )
+
+    top_preview = matches[:5]
+    rows_html = []
+
+    for rank, market in enumerate(top_preview, start=1):
+        question = escape(str(market.get("question", "")))
+        similarity = 100 * float(market.get("similarity", 0.0))
+        volume = escape(money(market.get("volume_usd", 0.0)))
+        topic_name = clean_text(market.get("topic", ""))
+        event_title = clean_text(market.get("event_title", ""))
+
+        secondary = []
+        if topic_name:
+            secondary.append(topic_name)
+        if event_title:
+            secondary.append(event_title)
+        meta = " · ".join(secondary) if secondary else "Historical market"
+
+        rows_html.append(
+            '<div class="pp-history-row">'
+            f'<div class="pp-history-rank">#{rank}</div>'
+            '<div>'
+            f'<div class="pp-history-question">{question}</div>'
+            f'<div class="pp-history-meta">{escape(meta)}</div>'
+            '</div>'
+            '<div>'
+            '<div class="pp-history-stat-label">Similarity</div>'
+            f'<div class="pp-history-stat-value pp-history-similarity">{similarity:.1f}%</div>'
+            '</div>'
+            '<div>'
+            '<div class="pp-history-stat-label">Observed volume</div>'
+            f'<div class="pp-history-stat-value">{volume}</div>'
+            '</div>'
+            '</div>'
+        )
+
+    st.markdown(
+        '<div class="pp-history-list">' + "".join(rows_html) + "</div>",
+        unsafe_allow_html=True,
+    )
+
+    all_match_rows = []
+    for rank, market in enumerate(matches, start=1):
+        all_match_rows.append(
             {
-                "Historical question": m["question"],
-                "Similarity": 100 * float(m["similarity"]),
-                "Actual volume (USD)": float(m["volume_usd"]),
+                "Rank": rank,
+                "Historical question": market["question"],
+                "Similarity": 100 * float(market["similarity"]),
+                "Observed volume (USD)": float(market["volume_usd"]),
+                "Topic": clean_text(market.get("topic", "")),
             }
-            for m in matches
-        ]
-    )
-    st.dataframe(
-        data,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Historical question": st.column_config.TextColumn(
-                "Historical question",
-                width="large",
-            ),
-            "Similarity": st.column_config.NumberColumn(
-                "Similarity",
-                format="%.1f%%",
-                help="Cosine similarity to the proposed market.",
-                step=0.1,
-            ),
-            "Actual volume (USD)": st.column_config.NumberColumn(
-                "Observed volume",
-                format="$%.0f",
-            ),
-        },
-    )
+        )
+
+    with st.expander(
+        f"View all {displayed_count} displayed comparable markets",
+        expanded=False,
+    ):
+        st.dataframe(
+            pd.DataFrame(all_match_rows),
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Rank": st.column_config.NumberColumn(
+                    "Rank",
+                    format="#%d",
+                    width="small",
+                ),
+                "Historical question": st.column_config.TextColumn(
+                    "Historical question",
+                    width="large",
+                ),
+                "Similarity": st.column_config.NumberColumn(
+                    "Similarity",
+                    format="%.1f%%",
+                    help="Cosine similarity to the proposed market.",
+                    step=0.1,
+                ),
+                "Observed volume (USD)": st.column_config.NumberColumn(
+                    "Observed volume",
+                    format="$%.0f",
+                ),
+                "Topic": st.column_config.TextColumn(
+                    "Topic",
+                    width="small",
+                ),
+            },
+        )
 
     elapsed = results.get("history_seconds")
     detail_text = (
-        f"Showing {displayed_count} of {total_qualified:,} qualifying historical markets."
+        f"Showing the top {displayed_count} of {total_qualified:,} qualifying historical markets."
     )
     if elapsed is not None:
         detail_text += f" Search inference: {elapsed:.2f}s."
     st.caption(detail_text)
 
+    # ------------------------------------------------------------------
+    # Historical trading-volume range.
+    # ------------------------------------------------------------------
     st.markdown("#### Historical trading-volume range")
     if history.get("status") != "ok":
         st.info(
@@ -849,32 +1142,99 @@ def show_history(results, show_title=True):
     vol2.metric("25th percentile", money(history["p25_volume_usd"]))
     vol3.metric("75th percentile", money(history["p75_volume_usd"]))
 
-    chart_data = pd.DataFrame(
-        {
-            "Comparable": [f"#{i}" for i in range(1, displayed_count + 1)],
-            "Observed volume (USD)": [
-                float(m["volume_usd"]) for m in matches
-            ],
-        }
-    ).set_index("Comparable")
-    st.bar_chart(
-        chart_data,
-        x_label="Comparable market rank",
-        y_label="Observed USD volume",
+    chart_df = pd.DataFrame(
+        [
+            {
+                "Rank": rank,
+                "Market": f"#{rank}",
+                "Question": str(market.get("question", "")),
+                "Observed volume (USD)": float(market.get("volume_usd", 0.0)),
+                "Similarity": 100 * float(market.get("similarity", 0.0)),
+            }
+            for rank, market in enumerate(matches, start=1)
+        ]
     )
 
-    with st.expander("Full comparable-market details"):
-        st.dataframe(
-            pd.DataFrame(matches),
-            hide_index=True,
-            use_container_width=True,
+    base = alt.Chart(chart_df).encode(
+        y=alt.Y(
+            "Market:N",
+            sort=[f"#{i}" for i in range(1, displayed_count + 1)],
+            title="Comparable market rank",
+            axis=alt.Axis(
+                labelColor="#526078",
+                titleColor="#334155",
+                labelPadding=8,
+                ticks=False,
+                domain=False,
+            ),
+        ),
+        x=alt.X(
+            "Observed volume (USD):Q",
+            title="Observed USD volume",
+            axis=alt.Axis(
+                format="$,.0f",
+                labelColor="#526078",
+                titleColor="#334155",
+                gridColor="#e8edf4",
+                domain=False,
+            ),
+        ),
+        tooltip=[
+            alt.Tooltip("Market:N", title="Rank"),
+            alt.Tooltip("Question:N", title="Historical question"),
+            alt.Tooltip(
+                "Observed volume (USD):Q",
+                title="Observed volume",
+                format="$,.0f",
+            ),
+            alt.Tooltip("Similarity:Q", title="Similarity", format=".1f"),
+        ],
+    )
+
+    bars = base.mark_bar(
+        cornerRadiusTopRight=6,
+        cornerRadiusBottomRight=6,
+        size=24,
+        color="#6aaee8",
+    )
+
+    labels = base.mark_text(
+        align="left",
+        baseline="middle",
+        dx=7,
+        color="#334155",
+        fontSize=11,
+    ).encode(
+        text=alt.Text(
+            "Observed volume (USD):Q",
+            format="$,.0f",
         )
+    )
+
+    chart = (
+        (bars + labels)
+        .properties(
+            height=max(300, 38 * displayed_count),
+            background="#ffffff",
+        )
+        .configure_view(stroke=None)
+        .configure_axis(
+            labelFont="sans-serif",
+            titleFont="sans-serif",
+            titleFontWeight=600,
+        )
+    )
+
+    st.markdown('<div class="pp-chart-shell">', unsafe_allow_html=True)
+    st.altair_chart(chart, use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     st.caption(
-        f"Percentiles use the {stats_count} nearest qualified markets; the table and "
-        f"chart display the top {displayed_count}. Historical volumes are observations, "
-        "not forecasts."
+        f"Bars show observed USD volume for the top {displayed_count} displayed matches. "
+        f"Percentiles are calculated from the {stats_count} nearest qualified markets. "
+        "Historical volumes are observations, not forecasts."
     )
+
 
 
 def show_summary(results, show_title=True):
