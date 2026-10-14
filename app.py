@@ -1,7 +1,8 @@
 """PolyPulse: AI-powered prediction-market demand and historical intelligence.
 
-Deploy `app.py` to Streamlit Community Cloud. Both Hugging Face pipelines
-execute on CPU and are loaded only when a market is analysed. No model training.
+Deploy `app.py` to Streamlit Community Cloud. Hugging Face models execute on CPU
+and are loaded only when needed. Question validity is checked before demand or
+historical analysis. No model training occurs in the app.
 """
 
 from pathlib import Path
@@ -13,10 +14,22 @@ import streamlit as st
 
 from demand_prediction import LABELS, load_classifier, load_published_config, predict_demand
 from historical_search import clean_text, find_similar_markets, get_extractor, load_reference_data
+from question_validity import MODEL_ID as VALIDATOR_MODEL_ID, load_validator, validate_market_question
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 COMPARISON_CSV = BASE_DIR / "results" / "model_comparison.csv"
+
+CATEGORY_ICONS = {
+    "Politics": "🗳️",
+    "Cryptocurrency": "🪙",
+    "Sports": "🏆",
+    "Economics": "📈",
+    "Technology": "💻",
+    "Entertainment": "🎬",
+    "Science": "🔬",
+    "Other": "🧭",
+}
 
 # Topic labels come from the exported historical index, not hard-coded questions.
 # This keeps the example tab compatible with each newly generated Colab index.
@@ -26,6 +39,12 @@ st.set_page_config(
     page_icon="📊",
     layout="wide",
 )
+
+
+@st.cache_resource(show_spinner=False)
+def validity_resources():
+    """Cache the dedicated NLI question-validity model for this app process."""
+    return load_validator()
 
 
 @st.cache_resource(show_spinner=False)
@@ -47,13 +66,41 @@ def historical_resources():
 
 
 def analyse(question, title):
-    """Run both pipelines independently; preserve a successful result if one fails."""
+    """Validate first; only valid questions proceed to demand and history."""
     results = {
-        "question": question, "event_title": title, "demand": None,
-        "history": None, "demand_error": None, "history_error": None,
-        "demand_seconds": None, "history_seconds": None,
+        "question": question,
+        "event_title": title,
+        "validity": None,
+        "demand": None,
+        "history": None,
+        "validity_error": None,
+        "demand_error": None,
+        "history_error": None,
+        "validity_seconds": None,
+        "demand_seconds": None,
+        "history_seconds": None,
         "history_index_count": None,
     }
+
+    # Gate 1: a dedicated NLI model decides whether the input is suitable for
+    # prediction-market analysis. If it fails or rejects the input, nothing
+    # downstream is loaded or executed.
+    try:
+        with st.spinner("Checking whether this is a valid prediction-market question…"):
+            validator = validity_resources()
+            start = perf_counter()
+            results["validity"] = validate_market_question(
+                question, title, validator=validator
+            )
+            results["validity_seconds"] = perf_counter() - start
+    except Exception as exc:
+        results["validity_error"] = f"{type(exc).__name__}: {exc}"
+        return results
+
+    if not results["validity"]["is_valid"]:
+        return results
+
+    # Gate passed: only now load/run the demand classifier.
     try:
         with st.spinner("Loading fine-tuned DeBERTa and predicting demand…"):
             classifier, config = classifier_resources()
@@ -65,9 +112,9 @@ def analyse(question, title):
     except Exception as exc:
         results["demand_error"] = f"{type(exc).__name__}: {exc}"
 
+    # Historical MiniLM search also runs only after a successful validity check.
     try:
         with st.spinner("Searching the historical index with MiniLM…"):
-            # The PolyPulse 04 notebook exports these metadata names.
             _, _, metadata, _ = historical_resources()
             results["history_index_count"] = int(metadata["record_count"])
             min_similarity = float(metadata.get(
@@ -76,22 +123,85 @@ def analyse(question, title):
             min_comparables = int(metadata.get(
                 "min_comparables_default", metadata.get("default_min_comparables", 5)
             ))
-            stats_top_n = max(10, min_comparables, int(metadata.get("statistics_top_n_default", 30)))
+            stats_top_n = max(
+                10,
+                min_comparables,
+                int(metadata.get("statistics_top_n_default", 30)),
+            )
             start = perf_counter()
             results["history"] = find_similar_markets(
-                question, event_title=title, data_dir=str(DATA_DIR),
-                top_k=10, stats_top_n=stats_top_n,
-                min_similarity=min_similarity, min_comparables=min_comparables,
+                question,
+                event_title=title,
+                data_dir=str(DATA_DIR),
+                top_k=10,
+                stats_top_n=stats_top_n,
+                min_similarity=min_similarity,
+                min_comparables=min_comparables,
                 include_topic=True,
             )
             results["history_seconds"] = perf_counter() - start
     except Exception as exc:
         results["history_error"] = f"{type(exc).__name__}: {exc}"
+
     return results
 
 
 def money(value):
     return f"${float(value):,.0f}"
+
+
+def show_validity(results):
+    """Display the first-stage NLI validity decision."""
+    st.subheader("Question validity")
+    validity = results.get("validity")
+
+    if validity is None:
+        st.error(
+            "Question validation is currently unavailable, so PolyPulse did not "
+            "run demand prediction or historical analysis."
+        )
+        with st.expander("Technical details"):
+            st.code(results.get("validity_error") or "Unknown validation error")
+        return False
+
+    st.metric("Validity check", validity["label"].upper())
+
+    if validity["is_valid"]:
+        st.success(
+            "This input appears to be a clear, resolvable prediction-market proposition."
+        )
+    else:
+        st.error(
+            "This input does not appear to be a sufficiently clear and resolvable "
+            "prediction-market proposition. Please rewrite the market question and try again."
+        )
+
+    with st.expander("Validity model details"):
+        st.write(f"**Model:** `{validity['model_id']}`")
+        st.write(f"**Relative validity score:** {validity['validity_score']:.1%}")
+        st.write(f"**Valid-proposition entailment:** {validity['valid_entailment']:.1%}")
+        st.write(f"**Invalid-proposition entailment:** {validity['invalid_entailment']:.1%}")
+        st.caption(
+            "These are NLI routing scores, not calibrated probabilities. "
+            f"Measured validator inference: {results.get('validity_seconds', 0.0):.2f} s."
+        )
+
+    return bool(validity["is_valid"])
+
+
+def show_skipped_analysis():
+    """Keep the normal result sections visible while making the gate explicit."""
+    st.divider()
+    st.subheader("Trading-demand prediction")
+    st.info("Not run because the question did not pass the validity check.")
+
+    st.divider()
+    st.subheader("Historical comparable markets")
+    st.info("Not run because the question did not pass the validity check.")
+
+    st.divider()
+    st.subheader("Combined market insight")
+    st.info("No market analysis was produced. Revise the question and analyse again.")
 
 
 def show_demand(results):
@@ -313,33 +423,48 @@ def show_popular_questions():
         return
 
     count_col, examples_col, threshold_col = st.columns(3)
-    count_col.metric("Historical markets indexed", f"{total_markets:,}")
-    examples_col.metric("Ready-to-try questions", len(table))
-    threshold_col.metric("Minimum similarity", f"{similarity_threshold:.0%}")
+    count_col.metric("🗂️ Historical markets indexed", f"{total_markets:,}")
+    examples_col.metric("✨ Ready-to-try questions", len(table))
+    threshold_col.metric("🎯 Minimum similarity", f"{similarity_threshold:.0%}")
     if table.empty:
         st.info("No matching sample questions were found in the historical dataset.")
         return
 
-    categories = ["🌐 All categories"] + list(dict.fromkeys(table["Category"]))
-    selection = st.selectbox("Explore a category", categories, key="popular_category_filter")
-    if selection != "🌐 All categories":
-        table = table.loc[table["Category"] == selection]
+    raw_categories = list(dict.fromkeys(table["Category"]))
+    category_options = {"🌐 All categories": None}
+    for category in raw_categories:
+        icon = CATEGORY_ICONS.get(str(category), "📌")
+        category_options[f"{icon} {category}"] = category
+
+    selection = st.selectbox(
+        "🧭 Explore a category",
+        list(category_options),
+        key="popular_category_filter",
+    )
+    selected_category = category_options[selection]
+    if selected_category is not None:
+        table = table.loc[table["Category"] == selected_category]
+
+    display_table = table.copy()
+    display_table["Category"] = display_table["Category"].map(
+        lambda value: f"{CATEGORY_ICONS.get(str(value), '📌')} {value}"
+    )
 
     st.dataframe(
-        table.drop(columns=["Event title"]), hide_index=True, use_container_width=True,
+        display_table.drop(columns=["Event title"]), hide_index=True, use_container_width=True,
         column_config={
-            "Category": st.column_config.TextColumn("Category", width="medium"),
-            "Market question": st.column_config.TextColumn("Market question", width="large"),
+            "Category": st.column_config.TextColumn("🏷️ Category", width="medium"),
+            "Market question": st.column_config.TextColumn("💬 Market question", width="large"),
             "Similar markets": st.column_config.NumberColumn(
-                "Similar markets", format="%d", help="Other indexed markets with cosine similarity above the threshold, excluding the seed market."
+                "🔗 Similar markets", format="%d", help="Other indexed markets with cosine similarity above the threshold, excluding the seed market."
             ),
             "Median historical volume (USD)": st.column_config.NumberColumn(
-                "Median historical volume", format="$%.0f",
+                "💵 Median historical volume", format="$%.0f",
                 help="Median observed volume among the 10 nearest qualifying markets, or fewer if fewer qualify."
             ),
         },
     )
-    with st.expander("See event titles for these example questions"):
+    with st.expander("📝 See event titles for these example questions"):
         st.caption("For a closer match to the values above, enter both the question "
                    "and its original event title in Market Analysis.")
         st.dataframe(table[["Market question", "Event title"]],
@@ -393,6 +518,23 @@ def show_performance():
     except Exception as exc:
         st.warning(f"Historical metadata unavailable: {exc}")
 
+    st.divider()
+    st.subheader("Model 3 · Question validity")
+    st.write(
+        f"**Pretrained model:** [DeBERTa-v3-xsmall NLI validator]"
+        f"(https://huggingface.co/{VALIDATOR_MODEL_ID})"
+    )
+    st.write("**Hugging Face execution:** NLI sequence classification · CPU · no fine-tuning")
+    st.write(
+        "This model runs first. It independently evaluates positive and negative "
+        "prediction-market validity hypotheses. Only questions that pass the gate "
+        "continue to demand prediction and historical comparison."
+    )
+    st.caption(
+        "The validity gate is a routing safeguard, not a demand model. "
+        "Its operating threshold should be benchmarked on a small set of valid and invalid inputs."
+    )
+
 
 st.title("PolyPulse")
 st.caption("AI-Powered Prediction Market Intelligence")
@@ -438,11 +580,16 @@ with market_tab:
         st.write(f"**Market:** {result['question']}")
         if result["event_title"]:
             st.caption(f"Event: {result['event_title']}")
-        show_demand(result)
-        st.divider()
-        show_history(result)
-        st.divider()
-        show_summary(result)
+        passed_validity = show_validity(result)
+        if passed_validity:
+            st.divider()
+            show_demand(result)
+            st.divider()
+            show_history(result)
+            st.divider()
+            show_summary(result)
+        else:
+            show_skipped_analysis()
 with popular_tab:
     show_popular_questions()
 with performance_tab:
