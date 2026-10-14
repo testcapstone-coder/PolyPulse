@@ -57,323 +57,691 @@ st.set_page_config(
 # ---------------------------------------------------------------------------
 
 def inject_styles():
-    """Premium light UI: restrained, editorial, and product-focused."""
+    """Light, high-contrast visual system with clear tab and section separation."""
     st.markdown(
         """
 <style>
-:root{
-  --bg:#f6f8fb;
-  --surface:#ffffff;
-  --surface-soft:#fbfcfe;
-  --text:#172033;
-  --muted:#6f7b8f;
-  --subtle:#909bad;
-  --line:#e2e7ef;
-  --line-strong:#d5dce8;
-  --accent:#4659e8;
-  --accent-dark:#3546c7;
-  --accent-soft:#eef1ff;
-  --high:#b84b32;
-  --medium:#916000;
-  --low:#246da3;
-}
-html,body,.stApp,[data-testid="stAppViewContainer"],[data-testid="stMain"]{
-  background:var(--bg)!important;
-  color:var(--text)!important;
-}
-[data-testid="stHeader"]{background:rgba(246,248,251,.95)!important;}
-.block-container{
-  max-width:1160px;
-  padding-top:1.35rem;
-  padding-bottom:3rem;
+:root {
+    --pp-bg: #f4f7fb;
+    --pp-surface: #ffffff;
+    --pp-surface-soft: #f8faff;
+    --pp-border: #d9e2ef;
+    --pp-border-strong: #c6d3e4;
+    --pp-text: #182235;
+    --pp-muted: #677489;
+    --pp-primary: #3f5bd8;
+    --pp-primary-dark: #2f46b4;
+    --pp-primary-soft: #eef2ff;
+    --pp-blue-soft: #edf7ff;
+    --pp-success: #16794c;
+    --pp-warning: #a96800;
+    --pp-danger: #b73838;
 }
 
-/* text visibility */
-.stApp h1,.stApp h2,.stApp h3,.stApp h4,.stApp h5,.stApp h6{
-  color:var(--text)!important;
-  letter-spacing:-.025em;
+html, body, .stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"] {
+    background: var(--pp-bg) !important;
+    color: var(--pp-text) !important;
 }
-.stApp p,.stApp label,
+
+[data-testid="stHeader"] {
+    background: rgba(244, 247, 251, 0.94) !important;
+}
+
+[data-testid="stToolbar"],
+[data-testid="stDecoration"] {
+    color: var(--pp-text) !important;
+}
+
+/* ------------------------------------------------------------------
+   Text visibility guardrails.
+   Streamlit/BaseWeb can retain dark-theme text colors inside nested
+   components even after the page background is forced to light mode.
+   These explicit selectors keep every user-facing text element readable.
+   ------------------------------------------------------------------ */
+
 .stApp [data-testid="stMarkdownContainer"],
-.stApp [data-testid="stMarkdownContainer"] *,
-.stApp [data-testid="stWidgetLabel"] *,
-.stApp details *, .stApp summary *,
-.stApp [data-testid="stAlert"] *,
-.stApp [data-testid="stToast"] *{
-  color:var(--text)!important;
-}
+.stApp [data-testid="stMarkdownContainer"] p,
+.stApp [data-testid="stMarkdownContainer"] li,
+.stApp [data-testid="stMarkdownContainer"] strong,
+.stApp [data-testid="stMarkdownContainer"] em,
+.stApp [data-testid="stMarkdownContainer"] code,
 .stApp [data-testid="stCaptionContainer"],
-.stApp [data-testid="stCaptionContainer"] *{
-  color:var(--muted)!important;
-  opacity:1!important;
-}
-.stApp a,.stApp a:visited{color:var(--accent)!important;}
-
-/* brand / hero */
-.pp-hero{
-  padding:.35rem 0 1.25rem 0;
-  border-bottom:1px solid var(--line);
-}
-.pp-brandline{display:flex;align-items:center;gap:.62rem;margin-bottom:1rem;}
-.pp-brandmark{
-  width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;
-  border-radius:9px;background:var(--text);color:#fff;font-size:.82rem;font-weight:850;
-}
-.pp-brandname{font-size:1rem;font-weight:820;color:var(--text);letter-spacing:-.025em;}
-.pp-kicker{
-  color:var(--accent);font-size:.70rem;font-weight:820;letter-spacing:.11em;
-  text-transform:uppercase;margin-bottom:.48rem;
-}
-.pp-title{
-  max-width:860px;font-size:clamp(2.15rem,4vw,3.35rem);line-height:1.06;
-  font-weight:830;letter-spacing:-.05em;color:var(--text);margin:0;
-}
-.pp-subtitle{
-  max-width:760px;color:var(--muted);font-size:1rem;line-height:1.68;
-  margin-top:.82rem;
+.stApp [data-testid="stCaptionContainer"] p,
+.stApp [data-testid="stWidgetLabel"],
+.stApp [data-testid="stWidgetLabel"] p,
+.stApp label,
+.stApp summary,
+.stApp details,
+.stApp [role="radiogroup"],
+.stApp [role="option"],
+.stApp [data-baseweb="select"],
+.stApp [data-baseweb="select"] *,
+.stApp [data-baseweb="popover"] *,
+.stApp [data-testid="stExpander"] *,
+.stApp [data-testid="stAlert"] *,
+.stApp [data-testid="stToast"] * {
+    color: var(--pp-text) !important;
 }
 
-/* top navigation */
-div[data-testid="stRadio"]>label{display:none!important;}
-div[data-testid="stRadio"] div[role="radiogroup"]{
-  display:flex!important;flex-direction:row!important;gap:1.55rem!important;
-  padding:0!important;margin:.82rem 0 1.6rem 0!important;
-  border-bottom:1px solid var(--line)!important;background:transparent!important;
-  overflow-x:auto!important;
-}
-div[data-testid="stRadio"] div[role="radiogroup"]>label{
-  position:relative;display:flex!important;flex:0 0 auto!important;align-items:center!important;
-  min-height:42px!important;padding:0 0 .7rem 0!important;border:0!important;
-  background:transparent!important;cursor:pointer!important;
-}
-div[data-testid="stRadio"] div[role="radiogroup"]>label>div:first-child{display:none!important;}
-div[data-testid="stRadio"] div[role="radiogroup"]>label p{
-  margin:0!important;color:#7a8698!important;font-size:.91rem!important;
-  font-weight:710!important;white-space:nowrap!important;
-}
-div[data-testid="stRadio"] div[role="radiogroup"]>label:has(input:checked) p{
-  color:var(--text)!important;
-}
-div[data-testid="stRadio"] div[role="radiogroup"]>label:has(input:checked)::after{
-  content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;
-  border-radius:999px;background:var(--accent);
+/* Captions and secondary explanatory copy remain visibly muted, never hidden. */
+.stApp [data-testid="stCaptionContainer"],
+.stApp [data-testid="stCaptionContainer"] *,
+.stApp small {
+    color: var(--pp-muted) !important;
+    opacity: 1 !important;
 }
 
-/* headings / section labels */
-.pp-section-label{
-  color:#8a95a7;font-size:.68rem;font-weight:820;letter-spacing:.11em;
-  text-transform:uppercase;margin:0 0 .25rem 0;
-}
-.pp-section-intro{
-  max-width:760px;color:var(--muted);font-size:.94rem;line-height:1.62;
-  margin-bottom:1.05rem;
-}
-
-/* containers */
-div[data-testid="stVerticalBlockBorderWrapper"]{
-  background:var(--surface)!important;border:1px solid var(--line)!important;
-  border-radius:14px!important;box-shadow:0 3px 14px rgba(31,43,70,.035);
+/* Form control text, placeholders and dropdown values. */
+.stApp input,
+.stApp textarea,
+.stApp [data-baseweb="input"] input,
+.stApp [data-baseweb="textarea"] textarea,
+.stApp [data-baseweb="select"] input,
+.stApp [data-baseweb="select"] div {
+    color: var(--pp-text) !important;
+    -webkit-text-fill-color: var(--pp-text) !important;
 }
 
-/* inputs */
-div[data-baseweb="input"]>div,
-div[data-baseweb="textarea"]>div,textarea,input{
-  background:#fff!important;color:var(--text)!important;
-}
-div[data-baseweb="input"]>div,
-div[data-baseweb="textarea"]>div{
-  border-color:var(--line-strong)!important;border-radius:10px!important;
-}
-textarea::placeholder,input::placeholder{color:#9ba6b7!important;opacity:1!important;}
-
-/* buttons */
-div.stButton>button{
-  min-height:42px;border-radius:9px;border:1px solid var(--line-strong);
-  background:#fff;color:#2b3548;font-weight:720;box-shadow:none;
-}
-div.stButton>button:hover{border-color:#bac4d4;background:#fafbfe;}
-div.stButton>button[kind="primary"]{
-  background:var(--accent)!important;border-color:var(--accent)!important;color:#fff!important;
-}
-div.stButton>button[kind="primary"] *{color:#fff!important;}
-div.stButton>button[kind="primary"]:hover{
-  background:var(--accent-dark)!important;border-color:var(--accent-dark)!important;
+.stApp input::placeholder,
+.stApp textarea::placeholder {
+    color: #8b98ac !important;
+    -webkit-text-fill-color: #8b98ac !important;
+    opacity: 1 !important;
 }
 
-/* nested tabs */
-div[data-baseweb="tab-list"]{
-  gap:1.3rem!important;padding:0!important;margin:.65rem 0 1rem 0!important;
-  border-bottom:1px solid var(--line)!important;background:transparent!important;
-  overflow-x:auto!important;
-}
-button[data-baseweb="tab"]{
-  min-width:max-content!important;min-height:40px!important;padding:0 0 .7rem 0!important;
-  background:transparent!important;border:0!important;color:#7b8799!important;
-  font-weight:710!important;white-space:nowrap!important;
-}
-button[data-baseweb="tab"] *,button[data-baseweb="tab"] p{color:inherit!important;opacity:1!important;}
-button[data-baseweb="tab"][aria-selected="true"]{
-  color:var(--text)!important;border-bottom:2px solid var(--accent)!important;
+/* Buttons: force nested text/icon visibility as BaseWeb may style descendants. */
+.stApp div.stButton > button *,
+.stApp button[kind="secondary"] *,
+.stApp button[kind="tertiary"] * {
+    color: #243047 !important;
+    opacity: 1 !important;
 }
 
-/* form-side workflow */
-.pp-workflow-card{
-  border:1px solid var(--line);border-radius:14px;background:var(--surface);
-  padding:1.05rem 1.05rem .95rem 1.05rem;height:100%;
-}
-.pp-workflow-title{font-size:.84rem;font-weight:790;color:var(--text);margin-bottom:.8rem;}
-.pp-step{display:grid;grid-template-columns:26px 1fr;gap:.65rem;padding:.62rem 0;}
-.pp-step+.pp-step{border-top:1px solid var(--line);}
-.pp-step-num{
-  width:24px;height:24px;border-radius:7px;background:var(--accent-soft);color:var(--accent);
-  display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:820;
-}
-.pp-step-title{font-size:.82rem;font-weight:740;color:var(--text);line-height:1.3;}
-.pp-step-copy{font-size:.74rem;color:var(--muted);line-height:1.45;margin-top:.1rem;}
-.pp-prelaunch{
-  margin-top:.75rem;padding-top:.72rem;border-top:1px solid var(--line);
-  color:var(--subtle);font-size:.72rem;line-height:1.45;
+.stApp div.stButton > button[kind="primary"] *,
+.stApp button[kind="primary"] * {
+    color: #ffffff !important;
+    opacity: 1 !important;
 }
 
-/* analysis result */
-.pp-analysis-shell{
-  border:1px solid var(--line);border-radius:16px;background:#fff;
-  padding:1.35rem 1.4rem;margin:.4rem 0 1.15rem 0;
-  box-shadow:0 4px 18px rgba(31,43,70,.035);
-}
-.pp-analysis-badge{
-  color:var(--accent);font-size:.67rem;font-weight:830;letter-spacing:.1em;
-  text-transform:uppercase;margin-bottom:.72rem;
-}
-.pp-analysis-question{
-  color:var(--text);font-size:clamp(1.22rem,2vw,1.5rem);line-height:1.36;
-  font-weight:790;letter-spacing:-.028em;margin-bottom:.26rem;
-}
-.pp-analysis-event{color:var(--muted);font-size:.84rem;margin-bottom:1.05rem;}
-.pp-result-grid{
-  display:grid;grid-template-columns:1.18fr .82fr .82fr .82fr;
-  border-top:1px solid var(--line);
-}
-.pp-result-primary,.pp-result-stat{padding:.95rem 1rem .05rem 0;min-width:0;}
-.pp-result-stat{border-left:1px solid var(--line);padding-left:1rem;}
-.pp-result-label{color:#8b96a8;font-size:.70rem;margin-bottom:.28rem;}
-.pp-result-demand{
-  font-size:1.55rem;line-height:1.05;font-weight:850;letter-spacing:-.035em;
-}
-.pp-result-value{
-  color:var(--text);font-size:1.05rem;line-height:1.18;font-weight:790;
-  letter-spacing:-.02em;overflow-wrap:anywhere;
-}
-.pp-demand-high{color:var(--high);}
-.pp-demand-medium{color:var(--medium);}
-.pp-demand-low{color:var(--low);}
-
-/* overview */
-.pp-summary-card{padding:.05rem 0;background:transparent;}
-.pp-summary-headline{
-  color:var(--text);font-size:1rem;line-height:1.5;font-weight:770;margin-bottom:.48rem;
-}
-.pp-summary-copy{color:#566276;font-size:.93rem;line-height:1.66;}
-.pp-summary-stat{color:var(--accent);font-weight:800;}
-.pp-summary-note{
-  color:#8d98a9;margin-top:.85rem;padding-top:.72rem;border-top:1px solid var(--line);
-  font-size:.76rem;
+/* Tabs: explicitly style every descendant so titles such as
+   "Explore Questions" stay visible in both selected and unselected states. */
+.stApp button[data-baseweb="tab"],
+.stApp button[data-baseweb="tab"] *,
+.stApp button[data-baseweb="tab"] p,
+.stApp button[data-baseweb="tab"] span,
+.stApp button[data-baseweb="tab"] div {
+    color: #4d5b70 !important;
+    -webkit-text-fill-color: #4d5b70 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
-/* demand */
-.pp-demand-top{
-  display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.1rem;
-}
-.pp-fact{
-  border:1px solid var(--line);border-radius:11px;padding:.85rem .9rem;background:var(--surface-soft);
-}
-.pp-fact-label{color:#8b96a8;font-size:.69rem;margin-bottom:.25rem;}
-.pp-fact-value{color:var(--text);font-size:1rem;font-weight:790;}
-.pp-score-list{display:flex;flex-direction:column;gap:.72rem;margin-top:.35rem;}
-.pp-score-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem;}
-.pp-score-name{font-size:.82rem;font-weight:730;color:var(--text);}
-.pp-score-value{font-size:.78rem;font-weight:760;color:#647087;}
-.pp-score-track{height:8px;border-radius:999px;background:#edf0f5;overflow:hidden;}
-.pp-score-fill{height:100%;border-radius:999px;background:#aeb8c8;}
-.pp-score-fill.is-active{background:var(--accent);}
-
-/* history */
-.pp-history-list{display:flex;flex-direction:column;gap:.45rem;margin:.4rem 0 .8rem 0;}
-.pp-history-row{
-  display:grid;grid-template-columns:40px minmax(0,1fr) 96px 124px;gap:.9rem;align-items:center;
-  padding:.78rem .05rem;border-bottom:1px solid var(--line);
-}
-.pp-history-row:last-child{border-bottom:0;}
-.pp-history-rank{
-  width:31px;height:31px;display:inline-flex;align-items:center;justify-content:center;
-  border-radius:8px;background:var(--accent-soft);color:var(--accent);font-size:.73rem;font-weight:820;
-}
-.pp-history-question{font-size:.90rem;line-height:1.42;font-weight:700;color:var(--text);}
-.pp-history-meta{font-size:.72rem;color:#8d98a9;margin-top:.18rem;}
-.pp-history-stat-label{
-  color:#98a1b0;font-size:.63rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.14rem;
-}
-.pp-history-stat-value{color:#334056;font-size:.86rem;font-weight:780;}
-.pp-history-similarity{color:var(--accent);}
-.pp-chart-shell{
-  border:1px solid var(--line);border-radius:12px;padding:.55rem .65rem .15rem;
-  background:#fff;margin-top:.45rem;
+.stApp button[data-baseweb="tab"][aria-selected="true"],
+.stApp button[data-baseweb="tab"][aria-selected="true"] *,
+.stApp button[data-baseweb="tab"][aria-selected="true"] p,
+.stApp button[data-baseweb="tab"][aria-selected="true"] span,
+.stApp button[data-baseweb="tab"][aria-selected="true"] div {
+    color: #263fbc !important;
+    -webkit-text-fill-color: #263fbc !important;
+    opacity: 1 !important;
 }
 
-/* explore */
-.pp-explore-meta{
-  display:flex;flex-wrap:wrap;gap:1.2rem;padding:.75rem 0 1rem 0;
-  border-bottom:1px solid var(--line);margin-bottom:1rem;
-}
-.pp-explore-stat-label{font-size:.68rem;color:#909bad;text-transform:uppercase;letter-spacing:.06em;}
-.pp-explore-stat-value{font-size:.96rem;color:var(--text);font-weight:790;margin-top:.14rem;}
-.pp-tag{
-  display:inline-flex;align-items:center;padding:.2rem .44rem;border-radius:999px;
-  background:var(--accent-soft);color:var(--accent);font-size:.65rem;font-weight:760;
-}
-.pp-card-title{font-size:.95rem;line-height:1.45;font-weight:760;color:var(--text);margin:.55rem 0 .25rem;}
-.pp-example-cta-hint{color:var(--muted);font-size:.73rem;margin:.35rem 0 .45rem;}
-
-/* model architecture */
-.pp-pipeline{
-  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin:1rem 0 1.2rem;
-}
-.pp-stage{
-  border:1px solid var(--line);border-radius:13px;background:#fff;padding:1rem;
-}
-.pp-stage-num{color:var(--accent);font-size:.67rem;font-weight:820;letter-spacing:.08em;text-transform:uppercase;}
-.pp-stage-title{font-size:.95rem;font-weight:790;color:var(--text);margin:.35rem 0 .2rem;}
-.pp-stage-copy{font-size:.78rem;line-height:1.5;color:var(--muted);}
-
-/* tables / expanders / alerts */
-[data-testid="stMetric"]{background:transparent!important;border:0!important;padding:0!important;}
-[data-testid="stMetricLabel"],[data-testid="stMetricLabel"] *{color:#8b96a8!important;font-size:.74rem!important;}
-[data-testid="stMetricValue"],[data-testid="stMetricValue"] *{color:var(--text)!important;font-weight:800!important;}
-div[data-testid="stDataFrame"]{
-  border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#fff;
-}
-details{background:#fff!important;border-color:var(--line)!important;border-radius:10px!important;}
-.stAlert{border-radius:10px;}
-
-/* footer */
-.pp-footer{
-  color:#929cad;margin-top:2.6rem;padding-top:1rem;border-top:1px solid var(--line);
-  font-size:.76rem;text-align:center;
+/* Expander summary and alert text can otherwise inherit theme colors. */
+.stApp details summary,
+.stApp details summary *,
+.stApp [data-testid="stExpander"] summary,
+.stApp [data-testid="stExpander"] summary * {
+    color: #334155 !important;
+    -webkit-text-fill-color: #334155 !important;
+    opacity: 1 !important;
 }
 
-@media(max-width:840px){
-  .pp-result-grid{grid-template-columns:1fr 1fr;}
-  .pp-result-stat:nth-child(3){border-left:0;padding-left:0;border-top:1px solid var(--line);}
-  .pp-result-stat:nth-child(4){border-top:1px solid var(--line);}
-  .pp-history-row{grid-template-columns:36px minmax(0,1fr);}
-  .pp-history-row>div:nth-child(3),.pp-history-row>div:nth-child(4){grid-column:2;}
-  .pp-pipeline{grid-template-columns:1fr;}
+
+/* Top-level app navigation: session-state controlled radio styled as tabs.
+   Unlike st.tabs, this can be changed programmatically from a button callback. */
+div[data-testid="stRadio"] > label {
+    display: none !important;
 }
-@media(max-width:640px){
-  .pp-title{font-size:2.05rem;}
-  .pp-result-grid{grid-template-columns:1fr;}
-  .pp-result-stat{border-left:0!important;border-top:1px solid var(--line);padding-left:0;}
-  .pp-demand-top{grid-template-columns:1fr;}
+
+div[data-testid="stRadio"] div[role="radiogroup"] {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+    padding: 6px !important;
+    margin: 0.55rem 0 1.15rem 0 !important;
+    border: 1px solid #d4deec !important;
+    border-radius: 14px !important;
+    background: #eaf0f8 !important;
+    overflow-x: auto !important;
+}
+
+div[data-testid="stRadio"] div[role="radiogroup"] > label {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    align-items: center !important;
+    min-height: 42px !important;
+    padding: 0.48rem 1rem !important;
+    border-radius: 10px !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    cursor: pointer !important;
+}
+
+div[data-testid="stRadio"] div[role="radiogroup"] > label p {
+    color: #4d5b70 !important;
+    font-weight: 760 !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+}
+
+div[data-testid="stRadio"] div[role="radiogroup"] > label:has(input:checked) {
+    background: #ffffff !important;
+    border-color: #d7e0ed !important;
+    box-shadow: 0 2px 9px rgba(45, 65, 116, 0.10) !important;
+}
+
+div[data-testid="stRadio"] div[role="radiogroup"] > label:has(input:checked) p {
+    color: #263fbc !important;
+}
+
+/* Hide native radio circles inside top navigation only. */
+div[data-testid="stRadio"] div[role="radiogroup"] > label > div:first-child {
+    display: none !important;
+}
+
+/* Example-market CTA: make the action clearly look like a button. */
+.pp-example-cta-hint {
+    color: #68758a;
+    font-size: 0.78rem;
+    margin: 0.25rem 0 0.45rem 0;
+}
+
+
+/* Metrics */
+.stApp [data-testid="stMetricLabel"],
+.stApp [data-testid="stMetricLabel"] *,
+.stApp [data-testid="stMetricDelta"],
+.stApp [data-testid="stMetricDelta"] * {
+    color: #68758a !important;
+    opacity: 1 !important;
+}
+
+.stApp [data-testid="stMetricValue"],
+.stApp [data-testid="stMetricValue"] * {
+    color: #1e293b !important;
+    opacity: 1 !important;
+}
+
+/* Links remain clearly identifiable on light surfaces. */
+.stApp a,
+.stApp a:visited {
+    color: #3156c8 !important;
+    text-decoration-color: rgba(49, 86, 200, 0.35) !important;
+}
+
+.block-container {
+    max-width: 1220px;
+    padding-top: 1.7rem;
+    padding-bottom: 3.5rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #182235 !important;
+}
+
+.stApp p,
+.stApp label {
+    color: #334155;
+}
+
+p, label, span, div {
+    color: inherit;
+}
+
+/* Hero */
+.pp-hero {
+    border: 1px solid #d7e1f2;
+    border-radius: 24px;
+    padding: 28px 30px 26px 30px;
+    margin-bottom: 1.15rem;
+    background:
+        radial-gradient(circle at 90% 10%, rgba(91, 103, 255, 0.15), transparent 32%),
+        radial-gradient(circle at 8% 100%, rgba(56, 173, 255, 0.12), transparent 34%),
+        linear-gradient(145deg, #ffffff, #f7f9ff);
+    box-shadow: 0 12px 34px rgba(42, 57, 89, 0.07);
+}
+
+.pp-kicker {
+    display: inline-block;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: #5d6a80;
+    margin-bottom: 0.45rem;
+}
+
+.pp-title {
+    color: #16213a;
+    font-size: clamp(2.15rem, 5vw, 3.55rem);
+    line-height: 1.02;
+    font-weight: 820;
+    letter-spacing: -0.045em;
+    margin: 0;
+}
+
+.pp-subtitle {
+    max-width: 780px;
+    color: #5c697e;
+    font-size: 1.03rem;
+    line-height: 1.58;
+    margin-top: 0.8rem;
+    margin-bottom: 1rem;
+}
+
+.pp-pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.pp-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.34rem;
+    border: 1px solid #d9e2ef;
+    border-radius: 999px;
+    padding: 0.38rem 0.68rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #48566d;
+    background: #ffffff;
+}
+
+/* Section labels */
+.pp-section-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: #77839a;
+    margin: 0.15rem 0 0.22rem 0;
+}
+
+/* Native bordered Streamlit containers become clear white cards */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: var(--pp-surface) !important;
+    border: 1px solid var(--pp-border) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 5px 18px rgba(42, 57, 89, 0.04);
+}
+
+/* Inputs */
+div[data-baseweb="input"] > div,
+div[data-baseweb="textarea"] > div,
+textarea,
+input {
+    background: #ffffff !important;
+    color: #182235 !important;
+}
+
+div[data-baseweb="input"] > div,
+div[data-baseweb="textarea"] > div {
+    border-color: #cfd9e7 !important;
+}
+
+textarea::placeholder,
+input::placeholder {
+    color: #96a2b5 !important;
+    opacity: 1 !important;
+}
+
+/* Primary/secondary buttons */
+div.stButton > button {
+    border-radius: 11px;
+    min-height: 44px;
+    font-weight: 720;
+    border: 1px solid #cbd6e5;
+    background: #ffffff;
+    color: #243047;
+}
+
+div.stButton > button[kind="primary"] {
+    background: var(--pp-primary) !important;
+    border-color: var(--pp-primary) !important;
+    color: #ffffff !important;
+}
+
+div.stButton > button[kind="primary"]:hover {
+    background: var(--pp-primary-dark) !important;
+    border-color: var(--pp-primary-dark) !important;
+}
+
+/* Tabs: visibly separated segmented controls */
+div[data-baseweb="tab-list"] {
+    gap: 5px !important;
+    padding: 5px !important;
+    margin: 0.55rem 0 1rem 0 !important;
+    border: 1px solid #d4deec !important;
+    border-radius: 14px !important;
+    background: #eaf0f8 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: thin;
+}
+
+button[data-baseweb="tab"] {
+    min-height: 42px !important;
+    min-width: max-content !important;
+    border-radius: 10px !important;
+    padding: 0.55rem 1.05rem !important;
+    color: #4d5b70 !important;
+    font-weight: 720 !important;
+    background: transparent !important;
+    border: 0 !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
+}
+
+button[data-baseweb="tab"][aria-selected="true"] {
+    color: #263fbc !important;
+    background: #ffffff !important;
+    box-shadow: 0 2px 9px rgba(45, 65, 116, 0.10) !important;
+}
+
+button[data-baseweb="tab"] > div[data-testid="stMarkdownContainer"] > p {
+    color: inherit !important;
+}
+
+/* Metrics */
+[data-testid="stMetric"] {
+    border: 1px solid #dde5f0;
+    border-radius: 14px;
+    padding: 0.88rem 0.95rem;
+    background: #ffffff;
+    min-width: 0;
+}
+
+[data-testid="stMetricLabel"] {
+    color: #6c788b !important;
+    font-size: 0.82rem;
+}
+
+[data-testid="stMetricValue"] {
+    color: #1e293b !important;
+    font-weight: 790;
+}
+
+/* Analysis snapshot */
+.pp-analysis-shell {
+    border: 1px solid #cbd7f5;
+    border-radius: 22px;
+    padding: 24px;
+    margin: 0.35rem 0 1.2rem 0;
+    background:
+        radial-gradient(circle at 93% 8%, rgba(88, 96, 235, 0.13), transparent 36%),
+        linear-gradient(145deg, #f7f9ff, #edf3ff);
+    box-shadow: 0 12px 32px rgba(55, 72, 128, 0.08);
+}
+
+.pp-analysis-topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.8rem;
+}
+
+.pp-analysis-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
+    padding: 0.34rem 0.62rem;
+    border-radius: 999px;
+    border: 1px solid #c6d2f4;
+    background: #ffffff;
+    color: #4054b8;
+    font-size: 0.75rem;
+    font-weight: 820;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.pp-analysis-question {
+    color: #182235;
+    font-size: clamp(1.18rem, 2.2vw, 1.52rem);
+    line-height: 1.35;
+    font-weight: 790;
+    letter-spacing: -0.018em;
+    margin: 0 0 0.3rem 0;
+}
+
+.pp-analysis-event {
+    color: #68758a;
+    font-size: 0.89rem;
+    margin-bottom: 1.2rem;
+}
+
+.pp-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.72rem;
+}
+
+.pp-kpi {
+    min-width: 0;
+    border: 1px solid #d7e0ef;
+    border-radius: 15px;
+    padding: 0.95rem 1rem;
+    background: rgba(255, 255, 255, 0.90);
+    box-shadow: 0 3px 10px rgba(48, 62, 102, 0.04);
+}
+
+.pp-kpi-label {
+    color: #6c788b;
+    font-size: 0.74rem;
+    line-height: 1.25;
+    margin-bottom: 0.34rem;
+}
+
+.pp-kpi-value {
+    color: #1d293b;
+    font-size: clamp(1.08rem, 2vw, 1.58rem);
+    line-height: 1.15;
+    font-weight: 810;
+    letter-spacing: -0.025em;
+    overflow-wrap: anywhere;
+}
+
+.pp-kpi-value.pp-demand-high { color: #c54a2e; }
+.pp-kpi-value.pp-demand-medium { color: #9a6500; }
+.pp-kpi-value.pp-demand-low { color: #176fb2; }
+
+/* Overview summary */
+.pp-summary-card {
+    border: 1px solid #d6e0f0;
+    border-radius: 16px;
+    padding: 1.15rem 1.25rem;
+    background: #ffffff;
+    box-shadow: 0 4px 16px rgba(42, 57, 89, 0.04);
+}
+
+.pp-summary-headline {
+    color: #1c2940;
+    font-size: 1.02rem;
+    line-height: 1.5;
+    font-weight: 780;
+    margin-bottom: 0.56rem;
+}
+
+.pp-summary-copy {
+    color: #526078;
+    font-size: 0.95rem;
+    line-height: 1.64;
+}
+
+.pp-summary-stat {
+    color: #253eaa;
+    font-weight: 800;
+}
+
+.pp-summary-note {
+    color: #7a8799;
+    margin-top: 0.8rem;
+    padding-top: 0.72rem;
+    border-top: 1px solid #e1e8f1;
+    font-size: 0.79rem;
+}
+
+
+/* Historical-comparable list */
+.pp-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.62rem;
+    margin: 0.35rem 0 0.75rem 0;
+}
+
+.pp-history-row {
+    display: grid;
+    grid-template-columns: 54px minmax(0, 1fr) 112px 145px;
+    gap: 0.9rem;
+    align-items: center;
+    padding: 0.88rem 0.95rem;
+    border: 1px solid #dce5f0;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 2px 9px rgba(42, 57, 89, 0.035);
+}
+
+.pp-history-rank {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 11px;
+    background: #eef2ff;
+    color: #4054b8;
+    font-size: 0.80rem;
+    font-weight: 820;
+}
+
+.pp-history-question {
+    color: #1e293b;
+    font-size: 0.93rem;
+    line-height: 1.4;
+    font-weight: 720;
+}
+
+.pp-history-meta {
+    color: #7a8799;
+    font-size: 0.77rem;
+    margin-top: 0.22rem;
+}
+
+.pp-history-stat-label {
+    color: #8390a4;
+    font-size: 0.70rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.16rem;
+}
+
+.pp-history-stat-value {
+    color: #24324a;
+    font-size: 0.92rem;
+    font-weight: 790;
+}
+
+.pp-history-similarity {
+    color: #3156c8;
+}
+
+.pp-chart-shell {
+    border: 1px solid #dce5f0;
+    border-radius: 16px;
+    padding: 0.75rem 0.85rem 0.35rem 0.85rem;
+    background: #ffffff;
+    box-shadow: 0 3px 12px rgba(42, 57, 89, 0.04);
+    margin-top: 0.35rem;
+}
+
+@media (max-width: 800px) {
+    .pp-history-row {
+        grid-template-columns: 46px minmax(0, 1fr);
+    }
+
+    .pp-history-row > div:nth-child(3),
+    .pp-history-row > div:nth-child(4) {
+        grid-column: 2;
+        display: inline-block;
+    }
+}
+
+
+/* Alerts, tables, expanders */
+.stAlert {
+    border-radius: 13px;
+}
+
+div[data-testid="stDataFrame"] {
+    border: 1px solid #dbe4ef;
+    border-radius: 13px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+details {
+    background: #ffffff !important;
+    border-color: #dbe4ef !important;
+    border-radius: 12px !important;
+}
+
+/* Progress */
+div[data-testid="stProgress"] > div > div {
+    border-radius: 999px;
+}
+
+/* Footer */
+.pp-footer {
+    color: #7a8799;
+    margin-top: 2.8rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid #dbe3ed;
+    font-size: 0.82rem;
+    text-align: center;
+}
+
+@media (max-width: 720px) {
+    .pp-hero {
+        padding: 22px 20px;
+        border-radius: 19px;
+    }
+
+    .pp-title {
+        font-size: 2.25rem;
+    }
+
+    .pp-analysis-shell {
+        padding: 18px;
+        border-radius: 18px;
+    }
+
+    .pp-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .pp-kpi-value {
+        font-size: 1.12rem;
+    }
+
+    button[data-baseweb="tab"] {
+        padding: 0.5rem 0.62rem !important;
+        font-size: 0.86rem !important;
+    }
 }
 </style>
         """,
@@ -384,15 +752,17 @@ details{background:#fff!important;border-color:var(--line)!important;border-radi
 def render_hero():
     html = (
         '<div class="pp-hero">'
-        '<div class="pp-brandline">'
-        '<span class="pp-brandmark">P</span>'
-        '<span class="pp-brandname">PolyPulse</span>'
-        '</div>'
-        '<div class="pp-kicker">Pre-launch prediction-market intelligence</div>'
-        '<div class="pp-title">A clearer view of demand before the market opens.</div>'
+        '<div class="pp-kicker">Prediction-market intelligence</div>'
+        '<div class="pp-title">PolyPulse</div>'
         '<div class="pp-subtitle">'
-        'Validate a proposed market, estimate expected trading demand, and ground the '
-        'result in comparable historical Polymarket markets.'
+        'Estimate pre-launch trading demand, benchmark a proposed market against '
+        'historical Polymarket observations, and surface the evidence behind the result.'
+        '</div>'
+        '<div class="pp-pill-row">'
+        '<span class="pp-pill">🛡️ Validity first</span>'
+        '<span class="pp-pill">📈 Demand forecast</span>'
+        '<span class="pp-pill">🧭 Historical comparables</span>'
+        '<span class="pp-pill">⚙️ Hugging Face models</span>'
         '</div>'
         '</div>'
     )
@@ -567,6 +937,7 @@ def comparable_count(history):
 # ---------------------------------------------------------------------------
 
 def show_result_header(results):
+    """Render the analysis snapshot as safe inline HTML, not indented Markdown."""
     demand = results.get("demand")
     history = results.get("history")
 
@@ -577,10 +948,14 @@ def show_result_header(results):
         if demand_label in {"Low", "Medium", "High"}
         else ""
     )
-    volume_band = compact_volume_band(demand.get("volume_band") if demand else None)
+
+    volume_band = compact_volume_band(
+        demand.get("volume_band") if demand else None
+    )
     n_comp = comparable_count(history)
     topic = topic_from_history(history)
     comparables = f"{n_comp:,}" if n_comp is not None else "—"
+
     event_text = (
         f"Event: {results['event_title']}"
         if results.get("event_title")
@@ -589,25 +964,27 @@ def show_result_header(results):
 
     html = (
         '<div class="pp-analysis-shell">'
-        '<div class="pp-analysis-badge">Analysis result</div>'
+        '<div class="pp-analysis-topline">'
+        '<span class="pp-analysis-badge">✦ Analysis snapshot</span>'
+        '</div>'
         f'<div class="pp-analysis-question">{escape(str(results["question"]))}</div>'
         f'<div class="pp-analysis-event">{escape(event_text)}</div>'
-        '<div class="pp-result-grid">'
-        '<div class="pp-result-primary">'
-        '<div class="pp-result-label">Expected demand</div>'
-        f'<div class="pp-result-demand {demand_class}">{escape(demand_value)}</div>'
+        '<div class="pp-kpi-grid">'
+        '<div class="pp-kpi">'
+        '<div class="pp-kpi-label">Expected demand</div>'
+        f'<div class="pp-kpi-value {demand_class}">{escape(demand_value)}</div>'
         '</div>'
-        '<div class="pp-result-stat">'
-        '<div class="pp-result-label">Historical volume band</div>'
-        f'<div class="pp-result-value">{escape(volume_band)}</div>'
+        '<div class="pp-kpi">'
+        '<div class="pp-kpi-label">Historical volume band</div>'
+        f'<div class="pp-kpi-value">{escape(volume_band)}</div>'
         '</div>'
-        '<div class="pp-result-stat">'
-        '<div class="pp-result-label">Comparable markets</div>'
-        f'<div class="pp-result-value">{escape(comparables)}</div>'
+        '<div class="pp-kpi">'
+        '<div class="pp-kpi-label">Comparable markets</div>'
+        f'<div class="pp-kpi-value">{escape(comparables)}</div>'
         '</div>'
-        '<div class="pp-result-stat">'
-        '<div class="pp-result-label">Suggested topic</div>'
-        f'<div class="pp-result-value">{escape(topic)}</div>'
+        '<div class="pp-kpi">'
+        '<div class="pp-kpi-label">Suggested topic</div>'
+        f'<div class="pp-kpi-value">{escape(topic)}</div>'
         '</div>'
         '</div>'
         '</div>'
@@ -630,55 +1007,39 @@ def show_demand(results, show_title=True):
         return
 
     label = pred["label"]
+    icon = DEMAND_ICONS.get(label, "📊")
     top_score = float(pred["model_scores"].get(label, 0.0))
-    band = pred.get("volume_band") or "Not published"
-    elapsed = results.get("demand_seconds")
 
-    top_html = (
-        '<div class="pp-demand-top">'
-        '<div class="pp-fact">'
-        '<div class="pp-fact-label">Predicted demand</div>'
-        f'<div class="pp-fact-value">{escape(label.upper())}</div>'
-        '</div>'
-        '<div class="pp-fact">'
-        '<div class="pp-fact-label">Historical demand band</div>'
-        f'<div class="pp-fact-value">{escape(str(band))}</div>'
-        '</div>'
-        '</div>'
+    headline_col, band_col = st.columns(2)
+    headline_col.metric(
+        f"{icon} Predicted demand",
+        label.upper(),
     )
-    st.markdown(top_html, unsafe_allow_html=True)
+    band_col.metric(
+        "Historical demand band",
+        pred.get("volume_band") or "Not published",
+    )
 
-    st.markdown("#### Score distribution")
-    rows = []
+    st.markdown("#### Model score distribution")
     for class_label in LABELS:
         score = float(pred["model_scores"][class_label])
-        active = " is-active" if class_label == label else ""
-        width = max(0.0, min(100.0, score * 100.0))
-        rows.append(
-            '<div>'
-            '<div class="pp-score-head">'
-            f'<span class="pp-score-name">{escape(class_label)}</span>'
-            f'<span class="pp-score-value">{score:.1%}</span>'
-            '</div>'
-            '<div class="pp-score-track">'
-            f'<div class="pp-score-fill{active}" style="width:{width:.2f}%"></div>'
-            '</div>'
-            '</div>'
+        prefix = "●" if class_label == label else "○"
+        st.progress(
+            min(max(score, 0.0), 1.0),
+            text=f"{prefix} {class_label}: {score:.1%}",
         )
-    st.markdown(
-        '<div class="pp-score-list">' + "".join(rows) + "</div>",
-        unsafe_allow_html=True,
-    )
 
     adjustment_note = (
-        "Published validation decision adjustments applied."
+        "Published validation decision adjustments are applied."
         if pred.get("adjustments_available")
-        else "No published validation decision adjustment applied."
+        else "No published validation adjustment is applied."
     )
+    elapsed = results.get("demand_seconds")
     runtime = f" Inference: {elapsed:.2f}s." if elapsed is not None else ""
+
     st.caption(
-        f"Top score: {top_score:.1%}. Classification scores are not calibrated probabilities. "
-        f"{adjustment_note}{runtime}"
+        f"Top model score: {top_score:.1%}. Scores are classification scores, "
+        f"not calibrated probabilities. {adjustment_note}{runtime}"
     )
 
 
@@ -1007,7 +1368,7 @@ def show_analysis_results(result):
     show_result_header(result)
 
     overview_tab, demand_tab, history_tab = st.tabs(
-        ["Overview", "Demand", "Historical evidence"]
+        ["⚡ Overview", "📈 Demand", "🧭 Historical evidence"]
     )
 
     with overview_tab:
@@ -1144,19 +1505,16 @@ def load_example_into_form(question, event_title):
     st.session_state["market_question"] = str(question)
     st.session_state["market_event_title"] = str(event_title or "")
     st.session_state.pop("polypulse_analysis", None)
-    st.session_state["top_nav"] = "Market Analysis"
+    st.session_state["top_nav"] = "📊 Market Analysis"
     st.session_state["example_loaded_notice"] = True
 
 
 def show_popular_questions():
     section_label("Explore")
-    st.subheader("Explore historical markets")
-    st.markdown(
-        '<div class="pp-section-intro">'
-        'Browse real historical markets with strong coverage in the reference index. '
-        'Choose one to load it directly into Market Analysis.'
-        '</div>',
-        unsafe_allow_html=True,
+    st.subheader("Start from a real historical market")
+    st.write(
+        "Browse high-volume historical questions with strong coverage in the current "
+        "reference index. Pick one to load it directly into Market Analysis."
     )
 
     try:
@@ -1168,27 +1526,20 @@ def show_popular_questions():
             st.code(f"{type(exc).__name__}: {exc}")
         return
 
-    meta_html = (
-        '<div class="pp-explore-meta">'
-        '<div><div class="pp-explore-stat-label">Indexed markets</div>'
-        f'<div class="pp-explore-stat-value">{total_markets:,}</div></div>'
-        '<div><div class="pp-explore-stat-label">Ready-to-try examples</div>'
-        f'<div class="pp-explore-stat-value">{len(table)}</div></div>'
-        '<div><div class="pp-explore-stat-label">Similarity floor</div>'
-        f'<div class="pp-explore-stat-value">{similarity_threshold:.0%}</div></div>'
-        '</div>'
-    )
-    st.markdown(meta_html, unsafe_allow_html=True)
+    met1, met2, met3 = st.columns(3)
+    met1.metric("🗂️ Indexed markets", f"{total_markets:,}")
+    met2.metric("✨ Ready-to-try examples", len(table))
+    met3.metric("🎯 Similarity floor", f"{similarity_threshold:.0%}")
 
     if table.empty:
         st.info("No sample questions meet the current historical-coverage rules.")
         return
 
     raw_categories = list(dict.fromkeys(table["Category"]))
-    category_options = {"All categories": None}
+    category_options = {"🌐 All categories": None}
     for category in raw_categories:
         icon = CATEGORY_ICONS.get(str(category), "📌")
-        category_options[str(category)] = category
+        category_options[f"{icon} {category}"] = category
 
     selected_label = st.selectbox(
         "Filter by category",
@@ -1211,10 +1562,7 @@ def show_popular_questions():
             with st.container(border=True):
                 category = str(row["Category"])
                 icon = CATEGORY_ICONS.get(category, "📌")
-                st.markdown(
-                    f'<span class="pp-tag">{escape(category)}</span>',
-                    unsafe_allow_html=True,
-                )
+                st.caption(f"{icon} {category}")
                 st.markdown(
                     f'<div class="pp-card-title">{escape(str(row["Market question"]))}</div>',
                     unsafe_allow_html=True,
@@ -1237,7 +1585,7 @@ def show_popular_questions():
                     unsafe_allow_html=True,
                 )
                 st.button(
-                    "Use in Market Analysis",
+                    "📊 Use in Market Analysis",
                     key=f"use_example_{selected_category}_{idx}_{row['Market question'][:30]}",
                     type="primary",
                     use_container_width=True,
@@ -1248,7 +1596,7 @@ def show_popular_questions():
     with st.expander("View all matching examples"):
         display_table = filtered.copy()
         display_table["Category"] = display_table["Category"].map(
-            lambda value: str(value)
+            lambda value: f"{CATEGORY_ICONS.get(str(value), '📌')} {value}"
         )
         st.dataframe(
             display_table.drop(columns=["Event title"]),
@@ -1288,42 +1636,49 @@ def show_popular_questions():
 def model_card(label, icon, title, role, model_name):
     with st.container(border=True):
         section_label(label)
-        st.markdown(f"### {title}")
+        st.markdown(f"### {icon} {title}")
         st.write(role)
         st.caption(model_name)
 
 
 def show_performance():
     section_label("Architecture")
-    st.subheader("Model architecture")
-    st.markdown(
-        '<div class="pp-section-intro">'
-        'Three specialised models handle validation, demand classification and historical '
-        'retrieval independently, keeping the workflow interpretable and modular.'
-        '</div>',
-        unsafe_allow_html=True,
+    st.subheader("Three-stage model pipeline")
+    st.write(
+        "PolyPulse separates input validation, demand classification and historical "
+        "retrieval so that each model has one clear responsibility."
     )
 
-    pipeline_html = (
-        '<div class="pp-pipeline">'
-        '<div class="pp-stage">'
-        '<div class="pp-stage-num">Stage 1 · Model 3</div>'
-        '<div class="pp-stage-title">Question validity</div>'
-        '<div class="pp-stage-copy">Rejects inputs that are not clear, resolvable prediction-market propositions.</div>'
-        '</div>'
-        '<div class="pp-stage">'
-        '<div class="pp-stage-num">Stage 2 · Model 1</div>'
-        '<div class="pp-stage-title">Demand prediction</div>'
-        '<div class="pp-stage-copy">Classifies expected pre-launch demand as Low, Medium or High.</div>'
-        '</div>'
-        '<div class="pp-stage">'
-        '<div class="pp-stage-num">Stage 3 · Model 2</div>'
-        '<div class="pp-stage-title">Historical retrieval</div>'
-        '<div class="pp-stage-copy">Finds comparable historical markets and their observed trading volumes.</div>'
-        '</div>'
-        '</div>'
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        model_card(
+            "Stage 1 · Model 3",
+            "🛡️",
+            "Question validity",
+            "Rejects inputs that are not clear, resolvable prediction-market propositions.",
+            "2610gnam05/nli-deberta-v3-small-demand",
+        )
+    with c2:
+        model_card(
+            "Stage 2 · Model 1",
+            "📈",
+            "Demand prediction",
+            "Classifies expected pre-launch demand as Low, Medium or High.",
+            "2610gnam05/polypulse-deberta-v3-base-demand",
+        )
+    with c3:
+        model_card(
+            "Stage 3 · Model 2",
+            "🧭",
+            "Historical retrieval",
+            "Finds semantically similar historical markets and observed trading volumes.",
+            "sentence-transformers/all-MiniLM-L6-v2",
+        )
+
+    st.markdown("#### Pipeline")
+    st.info(
+        "Market question  →  Validity gate  →  Demand prediction  →  Historical evidence"
     )
-    st.markdown(pipeline_html, unsafe_allow_html=True)
 
     with st.expander("Model 1 · Demand prediction"):
         st.write(
@@ -1398,12 +1753,12 @@ inject_styles()
 render_hero()
 
 if st.session_state.pop("example_loaded_notice", False):
-    st.toast("Example loaded in Market Analysis.")
+    st.toast("Example loaded in Market Analysis.", icon="✅")
 
 NAV_OPTIONS = [
-    "Market Analysis",
-    "Explore Questions",
-    "Model Stack",
+    "📊 Market Analysis",
+    "✨ Explore Questions",
+    "🧠 Model Stack",
 ]
 
 if "top_nav" not in st.session_state:
@@ -1417,15 +1772,12 @@ current_page = st.radio(
     label_visibility="collapsed",
 )
 
-if current_page == "Market Analysis":
+if current_page == "📊 Market Analysis":
     section_label("Analyse")
-    st.subheader("Analyse a proposed market")
-    st.markdown(
-        '<div class="pp-section-intro">'
-        'Enter the proposition as it would appear to users. PolyPulse validates it first, '
-        'then estimates demand and compares it with historical markets.'
-        '</div>',
-        unsafe_allow_html=True,
+    st.subheader("Test a proposed prediction market")
+    st.write(
+        "Enter the market proposition exactly as a user would see it. PolyPulse first "
+        "checks that it is a valid, resolvable prediction-market proposition."
     )
 
     def clear_previous_analysis():
@@ -1436,73 +1788,56 @@ if current_page == "Market Analysis":
         st.session_state["market_question"] = ""
         st.session_state["market_event_title"] = ""
 
-    form_col, workflow_col = st.columns([2.15, 0.85], gap="large")
-
-    with form_col:
-        with st.container(border=True):
-            question = st.text_area(
-                "Market question",
-                placeholder="Will Bitcoin exceed $150,000 by December 2027?",
-                max_chars=1200,
-                height=112,
-                key="market_question",
-                help=(
-                    "Use a clear prediction-market proposition with an outcome that can "
-                    "be objectively resolved."
-                ),
-            )
-
-            event_title = st.text_input(
-                "Event title",
-                placeholder="Optional — e.g. Bitcoin Price Predictions",
-                max_chars=300,
-                key="market_event_title",
-                help="Optional context. The market question remains the primary input.",
-            )
-
-            analyse_col, clear_col, spacer_col = st.columns([2, 1, 3])
-            with analyse_col:
-                submitted = st.button(
-                    "Analyse Market",
-                    type="primary",
-                    use_container_width=True,
-                    on_click=clear_previous_analysis,
-                )
-            with clear_col:
-                st.button(
-                    "Clear",
-                    use_container_width=True,
-                    on_click=clear_everything,
-                )
-
-    with workflow_col:
-        workflow_html = (
-            '<div class="pp-workflow-card">'
-            '<div class="pp-workflow-title">What happens next</div>'
-            '<div class="pp-step">'
-            '<div class="pp-step-num">1</div><div>'
-            '<div class="pp-step-title">Validate the proposition</div>'
-            '<div class="pp-step-copy">Checks that the outcome can be objectively resolved.</div>'
-            '</div></div>'
-            '<div class="pp-step">'
-            '<div class="pp-step-num">2</div><div>'
-            '<div class="pp-step-title">Estimate demand</div>'
-            '<div class="pp-step-copy">Classifies expected pre-launch demand as Low, Medium or High.</div>'
-            '</div></div>'
-            '<div class="pp-step">'
-            '<div class="pp-step-num">3</div><div>'
-            '<div class="pp-step-title">Ground in history</div>'
-            '<div class="pp-step-copy">Finds comparable markets and observed trading volumes.</div>'
-            '</div></div>'
-            '<div class="pp-prelaunch">Pre-launch only · No post-launch volume is used as a predictive input.</div>'
-            '</div>'
+    with st.container(border=True):
+        question = st.text_area(
+            "Market question",
+            placeholder="Will Bitcoin exceed $150,000 by December 2027?",
+            max_chars=1200,
+            height=105,
+            key="market_question",
+            help=(
+                "Use a clear prediction-market proposition with an outcome that can "
+                "be objectively resolved."
+            ),
         )
-        st.markdown(workflow_html, unsafe_allow_html=True)
+
+        event_title = st.text_input(
+            "Event title",
+            placeholder="Optional — e.g. Bitcoin Price Predictions",
+            max_chars=300,
+            key="market_event_title",
+            help="Optional context. The market question remains the primary input.",
+        )
+
+        with st.expander("What makes a good market question?"):
+            st.write(
+                "A strong input identifies a specific future event or measurable outcome "
+                "and is written so the final result can be objectively determined."
+            )
+            st.caption(
+                "Example: “Will Bitcoin exceed $150,000 by December 2027?”"
+            )
+
+        analyse_col, clear_col, spacer_col = st.columns([2, 1, 4])
+        with analyse_col:
+            submitted = st.button(
+                "Analyse Market",
+                type="primary",
+                use_container_width=True,
+                on_click=clear_previous_analysis,
+            )
+        with clear_col:
+            st.button(
+                "Clear",
+                use_container_width=True,
+                on_click=clear_everything,
+            )
 
     results_placeholder = st.empty()
 
     if submitted:
         results_placeholder.empty()
+
         if not question.strip():
             st.error("Enter a market question before analysing.")
         else:
@@ -1513,26 +1848,28 @@ if current_page == "Market Analysis":
 
     if "polypulse_analysis" in st.session_state:
         result = st.session_state["polypulse_analysis"]
+
         with results_placeholder.container():
             validity = result.get("validity")
 
             if validity is None:
-                st.error("Question validation is temporarily unavailable. Please try again.")
+                st.error(
+                    "Question validation is temporarily unavailable. Please try again."
+                )
             elif not validity.get("is_valid", False):
                 st.error(
                     "Please enter a clear prediction-market proposition, "
                     "with an outcome that can be objectively resolved."
                 )
             else:
-                st.divider()
-                section_label("Result")
-                st.markdown("## Market analysis")
+                section_label("Results")
+                st.markdown("## Analysis")
                 show_analysis_results(result)
 
-elif current_page == "Explore Questions":
+elif current_page == "✨ Explore Questions":
     show_popular_questions()
 
-elif current_page == "Model Stack":
+elif current_page == "🧠 Model Stack":
     show_performance()
 
 st.markdown(
