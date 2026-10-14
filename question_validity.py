@@ -129,7 +129,6 @@ def validate_market_question(question, event_title="", validator=None):
     is_valid = bool(
         validity_score >= VALIDITY_THRESHOLD
         and valid_entailment >= MIN_VALID_ENTAILMENT
-        and valid_entailment > invalid_entailment
     )
 
     return {
