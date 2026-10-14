@@ -138,6 +138,124 @@ def inject_styles():
             margin: 0.2rem 0 0.35rem 0;
         }
 
+        .pp-analysis-shell {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(104, 125, 255, 0.30);
+            border-radius: 24px;
+            padding: 24px;
+            margin: 0.35rem 0 1.2rem 0;
+            background:
+                radial-gradient(circle at 92% 12%, rgba(124, 92, 255, 0.20), transparent 34%),
+                radial-gradient(circle at 5% 100%, rgba(42, 174, 255, 0.13), transparent 32%),
+                linear-gradient(145deg, rgba(74, 93, 255, 0.105), rgba(127, 127, 127, 0.025));
+            box-shadow: 0 18px 46px rgba(0, 0, 0, 0.12);
+        }
+
+        .pp-analysis-topline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .pp-analysis-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.38rem;
+            padding: 0.34rem 0.62rem;
+            border-radius: 999px;
+            border: 1px solid rgba(104, 125, 255, 0.28);
+            background: rgba(104, 125, 255, 0.09);
+            font-size: 0.75rem;
+            font-weight: 760;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            opacity: 0.90;
+        }
+
+        .pp-analysis-question {
+            font-size: clamp(1.18rem, 2.2vw, 1.52rem);
+            line-height: 1.35;
+            font-weight: 760;
+            letter-spacing: -0.018em;
+            margin: 0 0 0.3rem 0;
+        }
+
+        .pp-analysis-event {
+            opacity: 0.66;
+            font-size: 0.89rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .pp-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.72rem;
+        }
+
+        .pp-kpi {
+            min-width: 0;
+            border: 1px solid rgba(128, 128, 128, 0.20);
+            border-radius: 16px;
+            padding: 0.95rem 1rem;
+            background: rgba(8, 11, 18, 0.16);
+            backdrop-filter: blur(6px);
+        }
+
+        .pp-kpi-label {
+            font-size: 0.74rem;
+            line-height: 1.25;
+            opacity: 0.63;
+            margin-bottom: 0.34rem;
+        }
+
+        .pp-kpi-value {
+            font-size: clamp(1.12rem, 2.15vw, 1.72rem);
+            line-height: 1.08;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            overflow-wrap: anywhere;
+        }
+
+        .pp-kpi-value.pp-demand-high { color: #ff8a5b; }
+        .pp-kpi-value.pp-demand-medium { color: #f0bd4f; }
+        .pp-kpi-value.pp-demand-low { color: #64b5ff; }
+
+        .pp-summary-card {
+            border: 1px solid rgba(104, 125, 255, 0.23);
+            border-radius: 18px;
+            padding: 1.15rem 1.25rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.095), rgba(59, 130, 246, 0.035));
+        }
+
+        .pp-summary-headline {
+            font-size: 1.02rem;
+            line-height: 1.5;
+            font-weight: 760;
+            margin-bottom: 0.56rem;
+        }
+
+        .pp-summary-copy {
+            font-size: 0.95rem;
+            line-height: 1.64;
+            opacity: 0.84;
+        }
+
+        .pp-summary-stat {
+            font-weight: 780;
+            opacity: 1;
+        }
+
+        .pp-summary-note {
+            margin-top: 0.8rem;
+            padding-top: 0.72rem;
+            border-top: 1px solid rgba(128, 128, 128, 0.15);
+            font-size: 0.79rem;
+            opacity: 0.55;
+        }
+
         .pp-card-title {
             font-weight: 720;
             font-size: 0.98rem;
@@ -206,6 +324,16 @@ def inject_styles():
             }
             .pp-title {
                 font-size: 2.25rem;
+            }
+            .pp-analysis-shell {
+                padding: 18px;
+                border-radius: 19px;
+            }
+            .pp-kpi-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .pp-kpi-value {
+                font-size: 1.18rem;
             }
         }
         </style>
@@ -363,6 +491,26 @@ def money(value):
     return f"${float(value):,.0f}"
 
 
+def compact_volume_band(value):
+    """Shorten historical-band copy so it remains readable in a KPI card."""
+    if not value:
+        return "Not published"
+
+    value = str(value).strip()
+
+    if value.lower().startswith("below "):
+        return "< " + value[6:].strip()
+
+    if value.lower().endswith(" or above"):
+        return "≥ " + value[:-9].strip()
+
+    if " to " in value:
+        left, right = value.split(" to ", 1)
+        return f"{left.strip()}–{right.strip()}"
+
+    return value
+
+
 def topic_from_history(history):
     if not isinstance(history, dict):
         return "—"
@@ -384,30 +532,79 @@ def comparable_count(history):
 # ---------------------------------------------------------------------------
 
 def show_result_header(results):
+    """Render the analysis snapshot in one responsive, visually distinct panel."""
     demand = results.get("demand")
     history = results.get("history")
 
-    with st.container(border=True):
-        section_label("Analysed market")
-        st.markdown(
-            f'<div class="pp-result-question">{escape(results["question"])}</div>',
-            unsafe_allow_html=True,
-        )
-        if results.get("event_title"):
-            st.caption(f"Event: {results['event_title']}")
+    demand_label = demand["label"] if demand else "Unavailable"
+    demand_value = demand_label.upper() if demand else "Unavailable"
+    demand_class = (
+        f"pp-demand-{demand_label.lower()}"
+        if demand_label in {"Low", "Medium", "High"}
+        else ""
+    )
 
-    demand_value = demand["label"].upper() if demand else "Unavailable"
-    volume_band = (
-        demand.get("volume_band") if demand and demand.get("volume_band") else "Not published"
+    volume_band = compact_volume_band(
+        demand.get("volume_band") if demand else None
     )
     n_comp = comparable_count(history)
     topic = topic_from_history(history)
 
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Expected demand", demand_value)
-    col2.metric("Historical volume band", volume_band)
-    col3.metric("Comparable markets", f"{n_comp:,}" if n_comp is not None else "—")
-    col4.metric("Suggested topic", topic)
+    if results.get("event_title"):
+        event_html = (
+            f'<div class="pp-analysis-event">Event: '
+            f'{escape(str(results["event_title"]))}</div>'
+        )
+    else:
+        event_html = '<div class="pp-analysis-event">No event title provided</div>'
+
+    comparables = f"{n_comp:,}" if n_comp is not None else "—"
+
+    st.markdown(
+        f"""
+        <div class="pp-analysis-shell">
+            <div class="pp-analysis-topline">
+                <span class="pp-analysis-badge">✦ Analysis snapshot</span>
+            </div>
+
+            <div class="pp-analysis-question">
+                {escape(str(results["question"]))}
+            </div>
+            {event_html}
+
+            <div class="pp-kpi-grid">
+                <div class="pp-kpi">
+                    <div class="pp-kpi-label">Expected demand</div>
+                    <div class="pp-kpi-value {demand_class}">
+                        {escape(demand_value)}
+                    </div>
+                </div>
+
+                <div class="pp-kpi">
+                    <div class="pp-kpi-label">Historical volume band</div>
+                    <div class="pp-kpi-value">
+                        {escape(volume_band)}
+                    </div>
+                </div>
+
+                <div class="pp-kpi">
+                    <div class="pp-kpi-label">Comparable markets</div>
+                    <div class="pp-kpi-value">
+                        {escape(comparables)}
+                    </div>
+                </div>
+
+                <div class="pp-kpi">
+                    <div class="pp-kpi-label">Suggested topic</div>
+                    <div class="pp-kpi-value">
+                        {escape(topic)}
+                    </div>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def show_demand(results, show_title=True):
@@ -591,48 +788,64 @@ def show_summary(results, show_title=True):
     demand = results.get("demand")
     history = results.get("history")
 
-    with st.container(border=True):
-        if demand and history and history.get("status") == "ok":
-            label = demand["label"].upper()
-            st.markdown(
-                f"**PolyPulse indicates {label} expected demand** for this proposed market."
-            )
-            st.write(
-                f"The {history['n_comparables']} nearest qualified historical markets "
-                f"had a median observed trading volume of "
-                f"**{money(history['median_volume_usd'])}**, with a 25th–75th percentile "
-                f"range of **{money(history['p25_volume_usd'])}–{money(history['p75_volume_usd'])}**."
-            )
-        elif demand and history:
-            st.markdown(
-                f"**PolyPulse indicates {demand['label'].upper()} expected demand.**"
-            )
-            st.write(
-                "Historical retrieval found too few sufficiently similar markets to "
-                "report a reliable descriptive volume range."
-            )
-        elif demand:
-            st.markdown(
-                f"**PolyPulse indicates {demand['label'].upper()} expected demand.**"
-            )
-            st.write("Historical evidence is currently unavailable.")
-        elif history and history.get("status") == "ok":
-            st.write(
-                "Demand classification is currently unavailable. "
-                f"The {history['n_comparables']} comparable markets had a median observed "
-                f"volume of **{money(history['median_volume_usd'])}**."
-            )
-        elif history:
-            st.write(
-                "Demand classification is unavailable and there are too few historical "
-                "comparables to report a volume range."
-            )
-        else:
-            st.warning("No analysis result is currently available.")
+    if demand and history and history.get("status") == "ok":
+        label = demand["label"].upper()
+        headline = (
+            f"PolyPulse indicates {label} expected demand for this proposed market."
+        )
+        copy = (
+            f"The {int(history['n_comparables']):,} nearest qualified historical markets "
+            f"had a median observed trading volume of "
+            f'<span class="pp-summary-stat">{escape(money(history["median_volume_usd"]))}</span>. '
+            f"The middle 50% ranged from "
+            f'<span class="pp-summary-stat">{escape(money(history["p25_volume_usd"]))}</span> '
+            f"to "
+            f'<span class="pp-summary-stat">{escape(money(history["p75_volume_usd"]))}</span>.'
+        )
+    elif demand and history:
+        headline = (
+            f"PolyPulse indicates {demand['label'].upper()} expected demand."
+        )
+        copy = (
+            "Historical retrieval found too few sufficiently similar markets "
+            "to report a reliable descriptive volume range."
+        )
+    elif demand:
+        headline = (
+            f"PolyPulse indicates {demand['label'].upper()} expected demand."
+        )
+        copy = "Historical evidence is currently unavailable."
+    elif history and history.get("status") == "ok":
+        headline = (
+            "Historical evidence is available, but demand classification is unavailable."
+        )
+        copy = (
+            f"The {int(history['n_comparables']):,} comparable markets had a median "
+            f"observed volume of "
+            f'<span class="pp-summary-stat">{escape(money(history["median_volume_usd"]))}</span>.'
+        )
+    elif history:
+        headline = "The market could not be fully assessed."
+        copy = (
+            "Demand classification is unavailable and there are too few "
+            "historical comparables to report a volume range."
+        )
+    else:
+        headline = "No analysis result is currently available."
+        copy = "Please run the market analysis again."
 
-    st.caption(
-        "Decision-support only. PolyPulse estimates market demand; it does not predict "
-        "the event outcome or recommend launching a market."
+    st.markdown(
+        f"""
+        <div class="pp-summary-card">
+            <div class="pp-summary-headline">{escape(headline)}</div>
+            <div class="pp-summary-copy">{copy}</div>
+            <div class="pp-summary-note">
+                Decision-support only. PolyPulse estimates market demand; it does not
+                predict the event outcome or recommend launching a market.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
 
@@ -1108,7 +1321,8 @@ with market_tab:
                     "with an outcome that can be objectively resolved."
                 )
             else:
-                st.markdown("### Analysis")
+                section_label("Results")
+                st.markdown("## Analysis")
                 show_analysis_results(result)
 
 with popular_tab:
