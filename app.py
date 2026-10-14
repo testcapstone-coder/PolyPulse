@@ -198,6 +198,67 @@ html, body, .stApp,
     opacity: 1 !important;
 }
 
+
+/* Top-level app navigation: session-state controlled radio styled as tabs.
+   Unlike st.tabs, this can be changed programmatically from a button callback. */
+div[data-testid="stRadio"] > label {
+    display: none !important;
+}
+
+div[data-testid="stRadio"] div[role="radiogroup"] {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+    padding: 6px !important;
+    margin: 0.55rem 0 1.15rem 0 !important;
+    border: 1px solid #d4deec !important;
+    border-radius: 14px !important;
+    background: #eaf0f8 !important;
+    overflow-x: auto !important;
+}
+
+div[data-testid="stRadio"] div[role="radiogroup"] > label {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    align-items: center !important;
+    min-height: 42px !important;
+    padding: 0.48rem 1rem !important;
+    border-radius: 10px !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    cursor: pointer !important;
+}
+
+div[data-testid="stRadio"] div[role="radiogroup"] > label p {
+    color: #4d5b70 !important;
+    font-weight: 760 !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+}
+
+div[data-testid="stRadio"] div[role="radiogroup"] > label:has(input:checked) {
+    background: #ffffff !important;
+    border-color: #d7e0ed !important;
+    box-shadow: 0 2px 9px rgba(45, 65, 116, 0.10) !important;
+}
+
+div[data-testid="stRadio"] div[role="radiogroup"] > label:has(input:checked) p {
+    color: #263fbc !important;
+}
+
+/* Hide native radio circles inside top navigation only. */
+div[data-testid="stRadio"] div[role="radiogroup"] > label > div:first-child {
+    display: none !important;
+}
+
+/* Example-market CTA: make the action clearly look like a button. */
+.pp-example-cta-hint {
+    color: #68758a;
+    font-size: 0.78rem;
+    margin: 0.25rem 0 0.45rem 0;
+}
+
+
 /* Metrics */
 .stApp [data-testid="stMetricLabel"],
 .stApp [data-testid="stMetricLabel"] *,
@@ -1440,10 +1501,11 @@ def load_popular_questions():
 
 
 def load_example_into_form(question, event_title):
-    """Populate the Market Analysis form on the next Streamlit rerun."""
+    """Load a historical example and navigate directly to Market Analysis."""
     st.session_state["market_question"] = str(question)
     st.session_state["market_event_title"] = str(event_title or "")
     st.session_state.pop("polypulse_analysis", None)
+    st.session_state["top_nav"] = "📊 Market Analysis"
     st.session_state["example_loaded_notice"] = True
 
 
@@ -1518,9 +1580,14 @@ def show_popular_questions():
                     money(row["Median historical volume (USD)"]),
                 )
 
+                st.markdown(
+                    '<div class="pp-example-cta-hint">Load this question into the analysis form</div>',
+                    unsafe_allow_html=True,
+                )
                 st.button(
-                    "Use in Market Analysis →",
+                    "📊 Use in Market Analysis",
                     key=f"use_example_{selected_category}_{idx}_{row['Market question'][:30]}",
+                    type="primary",
                     use_container_width=True,
                     on_click=load_example_into_form,
                     args=(row["Market question"], row["Event title"]),
@@ -1686,13 +1753,26 @@ inject_styles()
 render_hero()
 
 if st.session_state.pop("example_loaded_notice", False):
-    st.toast("Example loaded. Open Market Analysis to run it.", icon="✅")
+    st.toast("Example loaded in Market Analysis.", icon="✅")
 
-market_tab, popular_tab, performance_tab = st.tabs(
-    ["📊 Market Analysis", "✨ Explore Questions", "🧠 Model Stack"]
+NAV_OPTIONS = [
+    "📊 Market Analysis",
+    "✨ Explore Questions",
+    "🧠 Model Stack",
+]
+
+if "top_nav" not in st.session_state:
+    st.session_state["top_nav"] = NAV_OPTIONS[0]
+
+current_page = st.radio(
+    "Navigation",
+    NAV_OPTIONS,
+    key="top_nav",
+    horizontal=True,
+    label_visibility="collapsed",
 )
 
-with market_tab:
+if current_page == "📊 Market Analysis":
     section_label("Analyse")
     st.subheader("Test a proposed prediction market")
     st.write(
@@ -1786,10 +1866,10 @@ with market_tab:
                 st.markdown("## Analysis")
                 show_analysis_results(result)
 
-with popular_tab:
+elif current_page == "✨ Explore Questions":
     show_popular_questions()
 
-with performance_tab:
+elif current_page == "🧠 Model Stack":
     show_performance()
 
 st.markdown(
