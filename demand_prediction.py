@@ -112,38 +112,78 @@ def max_sequence_length(config, tokenizer=None):
 
 
 def volume_cutoffs(config):
-    """Two historical USD thresholds separating Low/Medium/High.
+    """Two historical USD thresholds separating Low/Medium/High."""
 
-    Accepted representations are an ordered pair or an explicitly USD-denominated
-    dict. Do not transform numbers whose units cannot be established.
-    """
-    source = _find(config, "volume_thresholds_usd", "usd_volume_thresholds", "volume_thresholds", "volume_cutoffs_usd", "volume_bins_usd")
-    if source is None:
-        return None  # Optional presentation metadata, never a blocker to prediction.
-    if isinstance(source, (tuple, list)) and len(source) == 2:
-        raw = source
-    elif isinstance(source, dict):
-        pairs = [
-            ("low_medium", "medium_high"),
-            ("low_to_medium", "medium_to_high"),
-            ("low_max", "medium_max"),
-            ("low_max_usd", "medium_max_usd"),
-            ("p33", "p67"),
-            ("q33", "q67"),
-            ("q1", "q2"),
-        ]
-        raw = next(((source[a], source[b]) for a, b in pairs if a in source and b in source), None)
-        if raw is None:
-            raise ModelConfigurationError("Unknown USD volume threshold keys in model config.")
+    # PolyPulse publishes these directly in polypulse_config.json.
+    low_direct = _find(config, "low_max_usd")
+    high_direct = _find(config, "medium_max_usd")
+
+    if low_direct is not None or high_direct is not None:
+        if low_direct is None or high_direct is None:
+            raise ModelConfigurationError(
+                "Both low_max_usd and medium_max_usd must be present."
+            )
+        raw = (low_direct, high_direct)
+
     else:
-        raise ModelConfigurationError("Unknown USD volume cutoff representation.")
+        source = _find(
+            config,
+            "volume_thresholds_usd",
+            "usd_volume_thresholds",
+            "volume_thresholds",
+            "volume_cutoffs_usd",
+            "volume_bins_usd",
+        )
+
+        if source is None:
+            return None
+
+        if isinstance(source, (tuple, list)) and len(source) == 2:
+            raw = source
+
+        elif isinstance(source, dict):
+            pairs = [
+                ("low_medium", "medium_high"),
+                ("low_to_medium", "medium_to_high"),
+                ("low_max", "medium_max"),
+                ("low_max_usd", "medium_max_usd"),
+                ("p33", "p67"),
+                ("q33", "q67"),
+                ("q1", "q2"),
+            ]
+
+            raw = next(
+                (
+                    (source[a], source[b])
+                    for a, b in pairs
+                    if a in source and b in source
+                ),
+                None,
+            )
+
+            if raw is None:
+                raise ModelConfigurationError(
+                    "Unknown USD volume threshold keys in model config."
+                )
+        else:
+            raise ModelConfigurationError(
+                "Unknown USD volume cutoff representation."
+            )
+
     try:
         low, high = map(float, raw)
     except (TypeError, ValueError) as exc:
-        raise ModelConfigurationError("USD cutoffs must be numeric.") from exc
+        raise ModelConfigurationError(
+            "USD cutoffs must be numeric."
+        ) from exc
+
     if not all(map(math.isfinite, (low, high))) or not 0 <= low < high:
-        raise ModelConfigurationError("USD cutoffs must satisfy 0 <= lower < upper.")
+        raise ModelConfigurationError(
+            "USD cutoffs must satisfy 0 <= lower < upper."
+        )
+
     return low, high
+
 
 
 def _bias_vector(raw, order):
@@ -252,16 +292,45 @@ def volume_band(label, cutoffs):
 
 @lru_cache(maxsize=1)
 def load_published_config():
-    """Read the real config.json loaded with the hosted fine-tuned model.
+    """Load Hugging Face model config plus PolyPulse inference settings."""
 
-    There is no separate polypulse_config.json in the user's supplied files.
-    This reuses the already cached classifier rather than downloading a second
-    configuration file or replacing the fine-tuned checkpoint with base weights.
-    """
-    config = load_classifier().model.config.to_dict()
-    if not isinstance(config, dict):
-        raise ModelConfigurationError("Hugging Face model config must be a JSON object.")
+    from huggingface_hub import hf_hub_download
+
+    # Standard Hugging Face config: architecture and class-ID metadata.
+    model_config = load_classifier().model.config.to_dict()
+
+    # PolyPulse-specific inference settings published by the training notebook:
+    # logit_biases, max_length, historical USD thresholds, labels, etc.
+    settings_path = hf_hub_download(
+        repo_id=MODEL_ID,
+        filename="polypulse_config.json",
+    )
+
+    with open(settings_path, "r", encoding="utf-8") as f:
+        polypulse_config = json.load(f)
+
+    if not isinstance(polypulse_config, dict):
+        raise ModelConfigurationError(
+            "polypulse_config.json must contain a JSON object."
+        )
+
+    # Keep the standard HF configuration, but let the explicitly published
+    # PolyPulse inference settings take precedence.
+    config = {**model_config, **polypulse_config}
+
+    # These are required to reproduce the validation-tuned Colab inference.
+    if "logit_biases" not in config:
+        raise ModelConfigurationError(
+            "polypulse_config.json is missing logit_biases."
+        )
+
+    if "max_length" not in config:
+        raise ModelConfigurationError(
+            "polypulse_config.json is missing max_length."
+        )
+
     return config
+
 
 
 @lru_cache(maxsize=1)
