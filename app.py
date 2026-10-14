@@ -539,42 +539,11 @@ with market_tab:
 
             # Fail closed if the validity model itself failed.
             if validity is None:
-                st.error("Please enter a clear, resolvable prediction-market proposition.")
+                st.error("Please enter a clear prediction-market proposition, with an outcome that can be objectively resolved.")
 
-            # Invalid input: show direct binary classifier details.
+            # Invalid input: show only the user-facing error message.
             elif not validity.get("is_valid", False):
-                st.error("Please enter a clear, resolvable prediction-market proposition.")
-
-                st.markdown("**Validity model details**")
-                detail_col1, detail_col2, detail_col3 = st.columns(3)
-                detail_col1.metric(
-                    "Model validity score",
-                    f"{validity.get('validity_score', 0.0):.1%}",
-                )
-                detail_col2.metric(
-                    "VALID score",
-                    f"{validity.get('valid_score', validity.get('validity_score', 0.0)):.1%}",
-                )
-                detail_col3.metric(
-                    "INVALID score",
-                    f"{validity.get('invalid_score', 0.0):.1%}",
-                )
-
-                st.metric(
-                    "Validity threshold",
-                    f"{validity.get('validity_threshold', 0.0):.1%}",
-                )
-
-                st.write(f"**Decision:** {validity.get('label', 'Invalid').upper()}")
-                st.write(f"**Model:** `{validity.get('model_id', VALIDATOR_MODEL_ID)}`")
-                st.write(f"**Base model:** `{validity.get('base_model', 'cross-encoder/nli-deberta-v3-small')}`")
-                st.write(f"**Method:** {validity.get('method', 'Unavailable')}")
-                if result.get("validity_seconds") is not None:
-                    st.caption(
-                        f"Measured validity-model inference: "
-                        f"{result['validity_seconds']:.2f} s "
-                        "(excludes initial model download/loading)."
-                    )
+                st.error("Please enter a clear prediction-market proposition, with an outcome that can be objectively resolved.")
 
             # Valid input: proceed directly to the normal analysis sections.
             else:
