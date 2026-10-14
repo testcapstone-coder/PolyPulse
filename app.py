@@ -43,7 +43,7 @@ st.set_page_config(
 
 @st.cache_resource(show_spinner=False)
 def validity_resources():
-    """Cache the dedicated NLI question-validity model for this app process."""
+    """Cache the fine-tuned binary question-validity model for this app process."""
     return load_validator()
 
 
@@ -82,7 +82,7 @@ def analyse(question, title):
         "history_index_count": None,
     }
 
-    # Gate 1: a dedicated NLI model decides whether the input is suitable for
+    # Gate 1: a fine-tuned binary classifier decides whether the input is suitable for
     # prediction-market analysis. If it fails or rejects the input, nothing
     # downstream is loaded or executed.
     try:
@@ -467,18 +467,21 @@ def show_performance():
     st.divider()
     st.subheader("Model 3 · Question validity")
     st.write(
-        f"**Pretrained model:** [ModernBERT-base zero-shot NLI validator]"
+        f"**Fine-tuned model:** [nli-deberta-v3-small-demand]"
         f"(https://huggingface.co/{VALIDATOR_MODEL_ID})"
     )
-    st.write("**Hugging Face execution:** zero-shot NLI sequence classification · CPU · no PolyPulse fine-tuning")
     st.write(
-        "This model runs first. It independently evaluates positive and negative "
-        "prediction-market validity hypotheses. Only questions that pass the gate "
-        "continue to demand prediction and historical comparison."
+        "**Base model:** `cross-encoder/nli-deberta-v3-small` · "
+        "binary `INVALID` / `VALID` text classification · CPU"
+    )
+    st.write(
+        "This model runs first and directly classifies whether the proposed question "
+        "is suitable for a resolvable prediction market. Only questions that pass "
+        "the validation threshold continue to demand prediction and historical comparison."
     )
     st.caption(
-        "The validity gate is a routing safeguard, not a demand model. "
-        "Its operating threshold should be benchmarked on a small set of valid and invalid inputs."
+        "The validity threshold is selected on the validator's held-out validation set "
+        "and published with the model in polypulse_validity_config.json."
     )
 
 
@@ -538,7 +541,7 @@ with market_tab:
             if validity is None:
                 st.error("Please enter a clear, resolvable prediction-market proposition.")
 
-            # Invalid input: show the error plus the full validity-model decision details.
+            # Invalid input: show direct binary classifier details.
             elif not validity.get("is_valid", False):
                 st.error("Please enter a clear, resolvable prediction-market proposition.")
 
@@ -549,26 +552,22 @@ with market_tab:
                     f"{validity.get('validity_score', 0.0):.1%}",
                 )
                 detail_col2.metric(
-                    "Valid entailment",
-                    f"{validity.get('valid_entailment', 0.0):.1%}",
+                    "VALID score",
+                    f"{validity.get('valid_score', validity.get('validity_score', 0.0)):.1%}",
                 )
                 detail_col3.metric(
-                    "Invalid entailment",
-                    f"{validity.get('invalid_entailment', 0.0):.1%}",
+                    "INVALID score",
+                    f"{validity.get('invalid_score', 0.0):.1%}",
                 )
 
-                threshold_col1, threshold_col2 = st.columns(2)
-                threshold_col1.metric(
+                st.metric(
                     "Validity threshold",
                     f"{validity.get('validity_threshold', 0.0):.1%}",
-                )
-                threshold_col2.metric(
-                    "Minimum valid entailment",
-                    f"{validity.get('minimum_valid_entailment', 0.0):.1%}",
                 )
 
                 st.write(f"**Decision:** {validity.get('label', 'Invalid').upper()}")
                 st.write(f"**Model:** `{validity.get('model_id', VALIDATOR_MODEL_ID)}`")
+                st.write(f"**Base model:** `{validity.get('base_model', 'cross-encoder/nli-deberta-v3-small')}`")
                 st.write(f"**Method:** {validity.get('method', 'Unavailable')}")
                 if result.get("validity_seconds") is not None:
                     st.caption(

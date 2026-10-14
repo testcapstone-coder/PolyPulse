@@ -1,148 +1,145 @@
-"""PolyPulse prediction-market question validity gate.
+"""PolyPulse fine-tuned prediction-market question validity gate.
 
-This module uses a dedicated Hugging Face zero-shot NLI model to decide whether a user's
-input is sufficiently clear and resolvable to continue to PolyPulse demand
-prediction and historical analysis.
-
-The validator is intentionally independent of MiniLM similarity and the
-fine-tuned Low/Medium/High demand classifier.
+This module loads the PolyPulse binary VALID/INVALID classifier fine-tuned from
+cross-encoder/nli-deberta-v3-small. It runs before demand prediction and
+historical comparison.
 """
 
 from functools import lru_cache
+import json
 import re
 
 import numpy as np
 
-MODEL_ID = "MoritzLaurer/ModernBERT-base-zeroshot-v2.0"
-MAX_LENGTH = 256
-
-# The two hypotheses are evaluated independently with the NLI model.
-VALID_HYPOTHESIS = (
-    "This text describes a meaningful prediction-market proposition "
-    "with an outcome that can be objectively resolved."
-)
-INVALID_HYPOTHESIS = (
-    "This text is meaningless, incomplete, or unsuitable as a resolvable "
-    "prediction-market proposition."
-)
-
-# Conservative fail-closed gate. This is an operating threshold, not a calibrated
-# probability threshold. It should be benchmarked on a small held-out validity set.
-VALIDITY_THRESHOLD = 0.45
-MIN_VALID_ENTAILMENT = 0.20
+MODEL_ID = "2610gnam05/nli-deberta-v3-small-demand"
+CONFIG_FILENAME = "polypulse_validity_config.json"
+DEFAULT_MAX_LENGTH = 128
+DEFAULT_VALID_THRESHOLD = 0.50
 
 
 class ValidityModelError(RuntimeError):
-    """Raised when the NLI model metadata/output cannot be interpreted safely."""
+    """Raised when the published validity model/config cannot be interpreted safely."""
 
 
-def _normalise_label(value):
-    return re.sub(r"[^A-Z0-9]+", "_", str(value).upper()).strip("_")
+def _clean_text(value):
+    return re.sub(r"\s+", " ", str(value or "")).strip()
 
 
-def _entailment_index(model):
-    """Find the entailment output index from published model metadata."""
-    id2label = getattr(model.config, "id2label", None) or {}
-    for idx, label in id2label.items():
-        if _normalise_label(label) == "ENTAILMENT":
-            return int(idx)
-
-    label2id = getattr(model.config, "label2id", None) or {}
-    for label, idx in label2id.items():
-        if _normalise_label(label) == "ENTAILMENT":
-            return int(idx)
-
+def _canonical_label(value):
+    value = re.sub(r"[^A-Z0-9]+", "", str(value).upper())
+    if value == "VALID":
+        return "VALID"
+    if value == "INVALID":
+        return "INVALID"
     raise ValidityModelError(
-        "The validity model does not publish a reliable ENTAILMENT label mapping."
+        f"Unexpected validity label {value!r}; expected VALID/INVALID."
     )
 
 
 @lru_cache(maxsize=1)
+def load_validity_config():
+    """Load the threshold/max-length exported by the training notebook."""
+    from huggingface_hub import hf_hub_download
+
+    path = hf_hub_download(repo_id=MODEL_ID, filename=CONFIG_FILENAME)
+    with open(path, "r", encoding="utf-8") as handle:
+        config = json.load(handle)
+
+    if not isinstance(config, dict):
+        raise ValidityModelError("Validity configuration must be a JSON object.")
+
+    threshold = float(config.get("valid_threshold", DEFAULT_VALID_THRESHOLD))
+    max_length = int(config.get("max_length", DEFAULT_MAX_LENGTH))
+
+    if not 0.0 <= threshold <= 1.0:
+        raise ValidityModelError("valid_threshold must be between 0 and 1.")
+    if not 8 <= max_length <= 1024:
+        raise ValidityModelError("max_length is outside the accepted range.")
+
+    config["valid_threshold"] = threshold
+    config["max_length"] = max_length
+    return config
+
+
+@lru_cache(maxsize=1)
 def load_validator():
-    """Load the dedicated ModernBERT NLI validator once per Python process, on CPU."""
-    import torch
+    """Load the fine-tuned binary classifier once per Python process, on CPU."""
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-    model = AutoModelForSequenceClassification.from_pretrained(
-        MODEL_ID,
-        torch_dtype=torch.float32,
-    )
+    model = AutoModelForSequenceClassification.from_pretrained(MODEL_ID)
     model.eval()
     return tokenizer, model
 
 
-def _entailment_score(text, hypothesis, validator=None):
-    """Return the NLI entailment softmax score for one premise/hypothesis pair."""
+def _label_index(model, wanted):
+    id2label = getattr(model.config, "id2label", None) or {}
+    matches = []
+    for idx, label in id2label.items():
+        try:
+            parsed = _canonical_label(label)
+        except ValidityModelError:
+            continue
+        if parsed == wanted:
+            matches.append(int(idx))
+
+    if len(matches) != 1:
+        raise ValidityModelError(
+            f"Could not identify exactly one {wanted} output in model metadata."
+        )
+    return matches[0]
+
+
+def validate_market_question(question, event_title="", validator=None, config=None):
+    """Return direct binary classifier scores for a proposed market question.
+
+    `event_title` is accepted for compatibility with the app API but is not fed to
+    this model because the fine-tuning objective is question validity itself.
+    """
     import torch
 
+    text = _clean_text(question)
+    if not text:
+        raise ValueError("Market question must not be empty.")
+
     tokenizer, model = validator or load_validator()
+    config = config or load_validity_config()
+    max_length = int(config["max_length"])
+    threshold = float(config["valid_threshold"])
+
     inputs = tokenizer(
         text,
-        hypothesis,
         return_tensors="pt",
         truncation=True,
-        max_length=MAX_LENGTH,
+        max_length=max_length,
     )
 
     with torch.no_grad():
-        logits = model(**inputs).logits[0]
+        logits = model(**inputs).logits[0].float()
 
-    probs = torch.softmax(logits.float(), dim=-1).detach().cpu().numpy()
+    probs = torch.softmax(logits, dim=-1).detach().cpu().numpy()
     if probs.ndim != 1 or not np.isfinite(probs).all():
         raise ValidityModelError("Validity model returned invalid scores.")
 
-    entailment_idx = _entailment_index(model)
-    if entailment_idx >= len(probs):
-        raise ValidityModelError("Entailment index is outside the model output.")
+    valid_idx = _label_index(model, "VALID")
+    invalid_idx = _label_index(model, "INVALID")
 
-    return float(probs[entailment_idx])
+    if valid_idx >= len(probs) or invalid_idx >= len(probs):
+        raise ValidityModelError("Published label indices exceed model output size.")
 
-
-def validate_market_question(question, event_title="", validator=None):
-    """Check whether input is a clear, resolvable prediction-market proposition.
-
-    The model evaluates a positive and negative NLI hypothesis independently.
-    The final validity score is their relative evidence:
-
-        valid_entailment / (valid_entailment + invalid_entailment)
-
-    This is a routing score, not a calibrated probability.
-    """
-    question = str(question or "").strip()
-    event_title = str(event_title or "").strip()
-    if not question:
-        raise ValueError("Market question must not be empty.")
-
-    premise = question
-    if event_title:
-        premise = f"Question: {question}\nEvent context: {event_title}"
-
-    valid_entailment = _entailment_score(
-        premise, VALID_HYPOTHESIS, validator=validator
-    )
-    invalid_entailment = _entailment_score(
-        premise, INVALID_HYPOTHESIS, validator=validator
-    )
-
-    total = valid_entailment + invalid_entailment
-    if total <= 0 or not np.isfinite(total):
-        raise ValidityModelError("Could not compute a finite validity evidence score.")
-
-    validity_score = valid_entailment / total
-    is_valid = bool(
-        validity_score >= VALIDITY_THRESHOLD
-        and valid_entailment >= MIN_VALID_ENTAILMENT
-    )
+    valid_score = float(probs[valid_idx])
+    invalid_score = float(probs[invalid_idx])
+    is_valid = bool(valid_score >= threshold)
 
     return {
         "is_valid": is_valid,
         "label": "Valid" if is_valid else "Invalid",
-        "validity_score": float(validity_score),
-        "valid_entailment": float(valid_entailment),
-        "invalid_entailment": float(invalid_entailment),
-        "validity_threshold": float(VALIDITY_THRESHOLD),
-        "minimum_valid_entailment": float(MIN_VALID_ENTAILMENT),
+        "validity_score": valid_score,
+        "valid_score": valid_score,
+        "invalid_score": invalid_score,
+        "validity_threshold": threshold,
         "model_id": MODEL_ID,
-        "method": "ModernBERT dual-hypothesis zero-shot NLI validity gate",
+        "base_model": config.get("base_model", "cross-encoder/nli-deberta-v3-small"),
+        "method": "fine-tuned binary prediction-market validity classifier",
+        "max_sequence_length": max_length,
     }
