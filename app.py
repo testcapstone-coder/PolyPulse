@@ -18,23 +18,8 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 COMPARISON_CSV = BASE_DIR / "results" / "model_comparison.csv"
 
-# Representative questions taken from the supplied historical index. The tab
-# verifies each question against the actual parquet data before displaying it.
-# These are NOT user search statistics or predicted popular future markets.
-POPULAR_QUESTION_EXAMPLES = [
-    ("₿ Crypto", "Bitcoin above 83,600 on October 4, 12PM ET?"),
-    ("₿ Crypto", "Bitcoin Up or Down - October 4, 12PM ET"),
-    ("₿ Crypto", "Ethereum Up or Down on October 3?"),
-    ("₿ Crypto", "Solana Up or Down on October 4?"),
-    ("⚽ Football", "Chesterfield FC vs. Tranmere Rovers FC: O/U 2.5"),
-    ("🎮 Esports", "Counter-Strike: G2 vs Natus Vincere - Map 1 Winner"),
-    ("🏈 NFL", "Cardinals vs. Giants"),
-    ("🗳️ Politics", "Will AS come 2nd place in the next Latvian parliamentary elections?"),
-    ("🗳️ Politics", 'Will Trump say "Somalia" during his Midterm Rally in Ohio?'),
-    ("🎬 Entertainment", 'Will MrBeast say "AI" or "Artificial Intelligence" during his next YouTube video?'),
-    ("🤖 Technology", "Will the next OpenAI GPT Sol model be released on October 3, 2026?"),
-    ("🤖 Technology", "Will OpenAI’s Astra model be released between September 28 and October 4, 2026?"),
-]
+# Topic labels come from the exported historical index, not hard-coded questions.
+# This keeps the example tab compatible with each newly generated Colab index.
 
 st.set_page_config(
     page_title="PolyPulse | Market Intelligence",
@@ -53,7 +38,7 @@ def classifier_resources():
 
 @st.cache_resource(show_spinner=False)
 def historical_resources():
-    """Cache 20K reference records/embeddings and one pretrained MiniLM pipeline."""
+    """Cache exported reference records, embeddings, and the MiniLM pipeline."""
     markets, embeddings, metadata = load_reference_data(str(DATA_DIR))
     extractor = get_extractor(
         metadata["model_id"], metadata.get("model_revision"), device=-1
@@ -62,10 +47,13 @@ def historical_resources():
 
 
 def analyse(question, title):
-    """Run the two independent branches without discarding a successful result."""
-    results = {"question": question, "event_title": title, "demand": None,
-               "history": None, "demand_error": None, "history_error": None,
-               "demand_seconds": None, "history_seconds": None}
+    """Run both pipelines independently; preserve a successful result if one fails."""
+    results = {
+        "question": question, "event_title": title, "demand": None,
+        "history": None, "demand_error": None, "history_error": None,
+        "demand_seconds": None, "history_seconds": None,
+        "history_index_count": None,
+    }
     try:
         with st.spinner("Loading fine-tuned DeBERTa and predicting demand…"):
             classifier, config = classifier_resources()
@@ -78,15 +66,22 @@ def analyse(question, title):
         results["demand_error"] = f"{type(exc).__name__}: {exc}"
 
     try:
-        with st.spinner("Searching 20,000 historical markets with MiniLM…"):
-            # Cache and verify that the model revision matches stored embeddings.
+        with st.spinner("Searching the historical index with MiniLM…"):
+            # The PolyPulse 04 notebook exports these metadata names.
             _, _, metadata, _ = historical_resources()
+            results["history_index_count"] = int(metadata["record_count"])
+            min_similarity = float(metadata.get(
+                "min_similarity_default", metadata.get("default_min_similarity", 0.52)
+            ))
+            min_comparables = int(metadata.get(
+                "min_comparables_default", metadata.get("default_min_comparables", 5)
+            ))
+            stats_top_n = max(10, min_comparables, int(metadata.get("statistics_top_n_default", 30)))
             start = perf_counter()
             results["history"] = find_similar_markets(
                 question, event_title=title, data_dir=str(DATA_DIR),
-                top_k=10,
-                min_similarity=float(metadata.get("default_min_similarity", 0.58)),
-                min_comparables=int(metadata.get("default_min_comparables", 5)),
+                top_k=10, stats_top_n=stats_top_n,
+                min_similarity=min_similarity, min_comparables=min_comparables,
                 include_topic=True,
             )
             results["history_seconds"] = perf_counter() - start
@@ -133,64 +128,84 @@ def show_demand(results):
 
 
 def show_history(results):
+    """Display PolyPulse 04 results without conflating shown and statistical matches."""
     st.subheader("Historical comparable markets")
     history = results["history"]
     if history is None:
         st.warning("Historical similarity search is currently unavailable. Demand results may still be shown.")
         with st.expander("Technical details"):
-            st.code(results["history_error"] or "Unknown error")
+            st.code(results.get("history_error") or "Unknown error")
         return
 
-    if not history["matches"]:
-        st.info("No historical comparable markets found.")
-        return
+    matches = history.get("matches") or []
+    displayed_count = len(matches)
+    stats_count = int(history.get("n_comparables", displayed_count))
+    total_qualified = int(history.get("n_above_threshold", stats_count))
+    threshold = float(history.get("minimum_similarity", 0.52))
+    index_count = results.get("history_index_count", history.get("n_reference_markets"))
 
-    count = history["n_comparables"]
-    st.caption(
-        f"{count} of the top 10 returned historical markets meet the cosine "
-        f"similarity threshold ({history['minimum_similarity']:.0%}). "
-        f"Indexed reference markets: {history['n_reference_markets']:,}. "
-        f"Measured search inference: {results['history_seconds']:.2f} s."
+    details = (
+        f"Showing {displayed_count} of {total_qualified:,} historical markets above "
+        f"the cosine similarity threshold ({threshold:.0%}). "
     )
-    if "topic_suggestion" in history:
-        topic = history["topic_suggestion"]
+    if index_count is not None:
+        details += f"Indexed reference markets: {int(index_count):,}. "
+    elapsed = results.get("history_seconds")
+    if elapsed is not None:
+        details += f"Search inference: {elapsed:.2f} s."
+    st.caption(details)
+
+    topic = history.get("topic_suggestion")
+    if isinstance(topic, dict) and topic.get("topic"):
         st.write(f"**Suggested topic:** {topic['topic']}")
-        st.caption("Topic is a semantic similarity heuristic, not a trained classifier.")
+        st.caption("Topic is a MiniLM semantic similarity heuristic, not a trained classifier.")
+
+    if not matches:
+        st.info(history.get("message") or "No historical markets meet the similarity threshold.")
+        return
 
     data = pd.DataFrame([
-        {"Historical question": m["question"], "Similarity": 100 * m["similarity"],
-         "Actual volume (USD)": m["volume_usd"]}
-        for m in history["matches"]
+        {
+            "Historical question": m["question"],
+            "Similarity": 100 * float(m["similarity"]),
+            "Actual volume (USD)": float(m["volume_usd"]),
+        }
+        for m in matches
     ])
     st.dataframe(
         data, use_container_width=True, hide_index=True,
         column_config={
-            "Similarity": st.column_config.NumberColumn(format="%.1f%%", help="Cosine similarity displayed as a percentage", step=0.1),
+            "Similarity": st.column_config.NumberColumn(
+                format="%.1f%%", help="Cosine similarity displayed as a percentage", step=0.1
+            ),
             "Actual volume (USD)": st.column_config.NumberColumn(format="$%.0f"),
         },
     )
-    # A separate detail view retains traceable market IDs and dates.
     with st.expander("Expand full comparable-market details"):
-        st.dataframe(pd.DataFrame(history["matches"]), hide_index=True,
-                     use_container_width=True)
+        st.dataframe(pd.DataFrame(matches), hide_index=True, use_container_width=True)
 
     st.subheader("Historical trading-volume analysis")
-    if history["status"] != "ok":
-        st.info(history["message"])
-        st.caption("Insufficient similar markets: volume quartiles are deliberately not reported.")
+    if history.get("status") != "ok":
+        st.info(history.get("message") or "Insufficient comparable historical markets.")
+        st.caption("Historical volume percentiles are not reported when comparable data is insufficient.")
         return
 
     col1, col2, col3 = st.columns(3)
     col1.metric("Median historical volume", money(history["median_volume_usd"]))
     col2.metric("25th percentile", money(history["p25_volume_usd"]))
     col3.metric("75th percentile", money(history["p75_volume_usd"]))
-    st.caption(f"Statistics computed from the {count} displayed qualified historical markets only.")
+    st.caption(
+        f"Statistics calculated from the {stats_count} nearest qualified historical markets; "
+        f"the table and chart display the top {displayed_count}. "
+        "These are recorded USD volumes, not predictions."
+    )
+    # Chart the DISPLAYED markets only. The up-to-30-market statistics sample
+    # is not included in the returned matches list.
     chart_data = pd.DataFrame({
-        "Comparable rank": [str(i) for i in range(1, count + 1)],
-        "Historical volume (USD)": [m["volume_usd"] for m in history["matches"]],
+        "Comparable rank": [str(i) for i in range(1, displayed_count + 1)],
+        "Historical volume (USD)": [float(m["volume_usd"]) for m in matches],
     }).set_index("Comparable rank")
-    st.bar_chart(chart_data, x_label="Comparable-market rank", y_label="Observed USD volume")
-    st.caption("These figures are actual stored historical observations, not predictions.")
+    st.bar_chart(chart_data, x_label="Displayed comparable-market rank", y_label="Observed USD volume")
 
 
 def show_summary(results):
@@ -223,43 +238,50 @@ def show_summary(results):
     st.caption("Market research support only. PolyPulse does not predict event outcomes or recommend market launches.")
 
 
-def popular_questions_table(markets, embeddings, min_similarity=0.58, min_comparables=5):
-    """Rank verified historical examples by the number of close neighbors.
+def popular_questions_table(markets, embeddings, min_similarity=0.52, min_comparables=5):
+    """Find a few real, high-volume reference questions per indexed topic.
 
-    The seed question's ORIGINAL, saved embedding is used, so visiting this
-    tab does not download or run a Hugging Face model. Each reported median
-    uses at most 10 nearest qualifying market volumes from the stored parquet.
+    Suggested questions are taken from the export itself, never invented.
+    Self-matches are EXCLUDED when counting neighbors or computing medians.
+    The examples are a convenience feature, not evidence of search traffic.
     """
-    normalized_questions = {}
-    for i, question in enumerate(markets["question"]):
-        normalized_questions.setdefault(clean_text(question).casefold(), i)
+    columns = ["Category", "Market question", "Event title", "Similar markets",
+               "Median historical volume (USD)"]
+    if markets.empty:
+        return pd.DataFrame(columns=columns)
 
+    topics = (markets["topic"].fillna("Other").astype(str)
+              if "topic" in markets.columns else pd.Series("Other", index=markets.index))
+    # At most two examples per topic, chosen from the highest observed market
+    # volumes. No fixed 20K-era question list is required.
+    candidates = pd.DataFrame({
+        "index": np.arange(len(markets)),
+        "Category": topics.to_numpy(),
+        "Volume": markets["volume_usd"].to_numpy(dtype=float),
+    })
+    candidates = (candidates.sort_values("Volume", ascending=False, kind="stable")
+                  .groupby("Category", sort=True).head(2))
     rows = []
-    for category, seed in POPULAR_QUESTION_EXAMPLES:
-        idx = normalized_questions.get(clean_text(seed).casefold())
-        if idx is None:  # Never display an example absent from the actual data.
-            continue
+    for _, candidate in candidates.iterrows():
+        idx = int(candidate["index"])
         query_vector = np.asarray(embeddings[idx], dtype=np.float32)
         similarities = np.asarray(embeddings @ query_vector, dtype=np.float32)
         qualified = np.flatnonzero(similarities >= min_similarity)
-        n_similar = len(qualified)
-        if n_similar < min_comparables:
-            continue  # This tab highlights complete historical analyses.
+        qualified = qualified[qualified != idx]  # no self-match
+        if len(qualified) < min_comparables:
+            continue
         nearest = qualified[np.argsort(-similarities[qualified], kind="stable")[:10]]
         volumes = markets.iloc[nearest]["volume_usd"].to_numpy(dtype=float)
         rows.append({
-            "Category": category,
+            "Category": str(candidate["Category"]),
             "Market question": str(markets.iloc[idx]["question"]),
-            "Event title": str(markets.iloc[idx].get("event_title", "") or ""),
-            "Similar markets": n_similar,
+            "Event title": clean_text(markets.iloc[idx].get("event_title", "")),
+            "Similar markets": int(len(qualified)),
             "Median historical volume (USD)": float(np.median(volumes)),
         })
-
-    columns = ["Category", "Market question", "Event title", "Similar markets",
-               "Median historical volume (USD)"]
-    return pd.DataFrame(rows, columns=columns).sort_values(
-        ["Similar markets", "Market question"], ascending=[False, True]
-    ).reset_index(drop=True)
+    return (pd.DataFrame(rows, columns=columns)
+            .sort_values(["Similar markets", "Market question"], ascending=[False, True])
+            .reset_index(drop=True))
 
 
 @st.cache_data(show_spinner=False)
@@ -268,18 +290,18 @@ def load_popular_questions():
     markets, embeddings, metadata = load_reference_data(str(DATA_DIR))
     table = popular_questions_table(
         markets, embeddings,
-        min_similarity=float(metadata.get("default_min_similarity", 0.58)),
-        min_comparables=int(metadata.get("default_min_comparables", 5)),
+        min_similarity=float(metadata.get("min_similarity_default", metadata.get("default_min_similarity", 0.52))),
+        min_comparables=int(metadata.get("min_comparables_default", metadata.get("default_min_comparables", 5))),
     )
-    return table, int(metadata["record_count"]), float(metadata.get("default_min_similarity", 0.58))
+    return table, int(metadata["record_count"]), float(metadata.get("min_similarity_default", metadata.get("default_min_similarity", 0.52)))
 
 
 def show_popular_questions():
     st.subheader("🔥 Popular questions to explore")
     st.write(
-        "Try these real historical Polymarket questions in **Market Analysis**. "
-        "Examples are ranked by the number of semantically similar markets "
-        "in the saved 20,000-market index."
+        "Explore real historical Polymarket questions taken directly from the current index. "
+        "Examples are selected among high-volume markets across available topics, "
+        "then ranked by the number of similar markets. These are not trending searches."
     )
     try:
         with st.spinner("Finding the best-covered historical examples…"):
@@ -309,7 +331,7 @@ def show_popular_questions():
             "Category": st.column_config.TextColumn("Category", width="medium"),
             "Market question": st.column_config.TextColumn("Market question", width="large"),
             "Similar markets": st.column_config.NumberColumn(
-                "Similar markets", format="%d", help="Indexed markets with cosine similarity above the configured threshold."
+                "Similar markets", format="%d", help="Other indexed markets with cosine similarity above the threshold, excluding the seed market."
             ),
             "Median historical volume (USD)": st.column_config.NumberColumn(
                 "Median historical volume", format="$%.0f",
@@ -323,10 +345,10 @@ def show_popular_questions():
         st.dataframe(table[["Market question", "Event title"]],
                      hide_index=True, use_container_width=True)
     st.caption(
-        "‘Similar markets’ measures historical semantic coverage, not how many people "
-        "asked a question. Volume is observed historical trading, not a forecast. "
-        "These examples already occur in the reference set and can match themselves; "
-        "use new questions for independent evaluation."
+        "‘Similar markets’ measures semantic coverage, not how often people searched. "
+        "Median volume is based on up to 10 other matching reference markets (self excluded). "
+        "Historical USD volumes are observations, not forecasts. "
+        "Use new questions for independent evaluation."
     )
 
 
