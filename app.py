@@ -540,7 +540,10 @@ with market_tab:
 
             # Invalid input: show ONLY the requested message.
             elif not validity.get("is_valid", False):
-                st.error("Please enter a clear, resolvable prediction-market proposition.")
+                st.error(
+                    "Please enter a clear, resolvable prediction-market proposition. "
+                    f"Model validity score: {validity.get('validity_score', 0.0):.1%}"
+                )
 
             # Valid input: proceed directly to the normal analysis sections.
             else:
