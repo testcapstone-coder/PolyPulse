@@ -150,60 +150,6 @@ def money(value):
     return f"${float(value):,.0f}"
 
 
-def show_validity(results):
-    """Display the first-stage NLI validity decision."""
-    st.subheader("Question validity")
-    validity = results.get("validity")
-
-    if validity is None:
-        st.error(
-            "Question validation is currently unavailable, so PolyPulse did not "
-            "run demand prediction or historical analysis."
-        )
-        with st.expander("Technical details"):
-            st.code(results.get("validity_error") or "Unknown validation error")
-        return False
-
-    st.metric("Validity check", validity["label"].upper())
-
-    if validity["is_valid"]:
-        st.success(
-            "This input appears to be a clear, resolvable prediction-market proposition."
-        )
-    else:
-        st.error(
-            "This input does not appear to be a sufficiently clear and resolvable "
-            "prediction-market proposition. Please rewrite the market question and try again."
-        )
-
-    with st.expander("Validity model details"):
-        st.write(f"**Model:** `{validity['model_id']}`")
-        st.write(f"**Relative validity score:** {validity['validity_score']:.1%}")
-        st.write(f"**Valid-proposition entailment:** {validity['valid_entailment']:.1%}")
-        st.write(f"**Invalid-proposition entailment:** {validity['invalid_entailment']:.1%}")
-        st.caption(
-            "These are NLI routing scores, not calibrated probabilities. "
-            f"Measured validator inference: {results.get('validity_seconds', 0.0):.2f} s."
-        )
-
-    return bool(validity["is_valid"])
-
-
-def show_skipped_analysis():
-    """Keep the normal result sections visible while making the gate explicit."""
-    st.divider()
-    st.subheader("Trading-demand prediction")
-    st.info("Not run because the question did not pass the validity check.")
-
-    st.divider()
-    st.subheader("Historical comparable markets")
-    st.info("Not run because the question did not pass the validity check.")
-
-    st.divider()
-    st.subheader("Combined market insight")
-    st.info("No market analysis was produced. Revise the question and analyse again.")
-
-
 def show_demand(results):
     st.subheader("Trading-demand prediction")
     pred = results["demand"]
@@ -567,29 +513,47 @@ with market_tab:
     with clear_col:
         st.button("Clear", on_click=clear_everything)
 
+    # Keep all analysis output in one placeholder so a new click can clear it
+    # before the next validity/model run starts.
+    results_placeholder = st.empty()
+
     if submitted:
-        # Never show an older market's results during a new analysis.
         clear_previous_analysis()
+        results_placeholder.empty()
+
         if not question.strip():
             st.error("Please enter a Market Question before analysing.")
         else:
-            st.session_state["polypulse_analysis"] = analyse(question.strip(), event_title.strip())
+            st.session_state["polypulse_analysis"] = analyse(
+                question.strip(), event_title.strip()
+            )
+
     if "polypulse_analysis" in st.session_state:
         result = st.session_state["polypulse_analysis"]
-        st.divider()
-        st.write(f"**Market:** {result['question']}")
-        if result["event_title"]:
-            st.caption(f"Event: {result['event_title']}")
-        passed_validity = show_validity(result)
-        if passed_validity:
-            st.divider()
-            show_demand(result)
-            st.divider()
-            show_history(result)
-            st.divider()
-            show_summary(result)
-        else:
-            show_skipped_analysis()
+
+        with results_placeholder.container():
+            validity = result.get("validity")
+
+            # Fail closed if the validity model itself failed.
+            if validity is None:
+                st.error("Please enter a clear, resolvable prediction-market proposition.")
+
+            # Invalid input: show ONLY the requested message.
+            elif not validity.get("is_valid", False):
+                st.error("Please enter a clear, resolvable prediction-market proposition.")
+
+            # Valid input: proceed directly to the normal analysis sections.
+            else:
+                st.divider()
+                st.write(f"**Market:** {result['question']}")
+                if result["event_title"]:
+                    st.caption(f"Event: {result['event_title']}")
+
+                show_demand(result)
+                st.divider()
+                show_history(result)
+                st.divider()
+                show_summary(result)
 with popular_tab:
     show_popular_questions()
 with performance_tab:
