@@ -57,150 +57,135 @@ st.set_page_config(
 # ---------------------------------------------------------------------------
 
 def inject_styles():
-    """Light, high-contrast visual system with clear tab and section separation."""
+    """Minimal light visual system: editorial, restrained, and highly readable."""
     st.markdown(
         """
 <style>
 :root {
-    --pp-bg: #f4f7fb;
-    --pp-surface: #ffffff;
-    --pp-surface-soft: #f8faff;
-    --pp-border: #d9e2ef;
-    --pp-border-strong: #c6d3e4;
-    --pp-text: #182235;
-    --pp-muted: #677489;
-    --pp-primary: #3f5bd8;
-    --pp-primary-dark: #2f46b4;
-    --pp-primary-soft: #eef2ff;
-    --pp-blue-soft: #edf7ff;
-    --pp-success: #16794c;
-    --pp-warning: #a96800;
-    --pp-danger: #b73838;
+    --bg: #f7f8fb;
+    --surface: #ffffff;
+    --surface-2: #fbfcfe;
+    --text: #172033;
+    --muted: #6f7b90;
+    --line: #e2e7ef;
+    --line-strong: #d5dce8;
+    --accent: #4659e8;
+    --accent-dark: #3546c7;
+    --accent-soft: #f0f3ff;
+    --success: #1f7a57;
+    --warning: #9d6500;
+    --danger: #b13b3b;
 }
 
 html, body, .stApp,
 [data-testid="stAppViewContainer"],
 [data-testid="stMain"] {
-    background: var(--pp-bg) !important;
-    color: var(--pp-text) !important;
+    background: var(--bg) !important;
+    color: var(--text) !important;
 }
 
 [data-testid="stHeader"] {
-    background: rgba(244, 247, 251, 0.94) !important;
+    background: rgba(247, 248, 251, .94) !important;
 }
 
-[data-testid="stToolbar"],
-[data-testid="stDecoration"] {
-    color: var(--pp-text) !important;
+.block-container {
+    max-width: 1180px;
+    padding-top: 1.45rem;
+    padding-bottom: 3.2rem;
 }
 
-/* ------------------------------------------------------------------
-   Text visibility guardrails.
-   Streamlit/BaseWeb can retain dark-theme text colors inside nested
-   components even after the page background is forced to light mode.
-   These explicit selectors keep every user-facing text element readable.
-   ------------------------------------------------------------------ */
+/* ---------- text visibility ---------- */
+.stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6 {
+    color: var(--text) !important;
+    letter-spacing: -0.02em;
+}
 
-.stApp [data-testid="stMarkdownContainer"],
-.stApp [data-testid="stMarkdownContainer"] p,
-.stApp [data-testid="stMarkdownContainer"] li,
-.stApp [data-testid="stMarkdownContainer"] strong,
-.stApp [data-testid="stMarkdownContainer"] em,
-.stApp [data-testid="stMarkdownContainer"] code,
-.stApp [data-testid="stCaptionContainer"],
-.stApp [data-testid="stCaptionContainer"] p,
-.stApp [data-testid="stWidgetLabel"],
-.stApp [data-testid="stWidgetLabel"] p,
+.stApp p,
 .stApp label,
-.stApp summary,
-.stApp details,
-.stApp [role="radiogroup"],
-.stApp [role="option"],
-.stApp [data-baseweb="select"],
-.stApp [data-baseweb="select"] *,
-.stApp [data-baseweb="popover"] *,
-.stApp [data-testid="stExpander"] *,
+.stApp [data-testid="stMarkdownContainer"],
+.stApp [data-testid="stMarkdownContainer"] *,
+.stApp [data-testid="stWidgetLabel"] *,
+.stApp details *,
+.stApp summary *,
 .stApp [data-testid="stAlert"] *,
 .stApp [data-testid="stToast"] * {
-    color: var(--pp-text) !important;
+    color: var(--text) !important;
 }
 
-/* Captions and secondary explanatory copy remain visibly muted, never hidden. */
 .stApp [data-testid="stCaptionContainer"],
-.stApp [data-testid="stCaptionContainer"] *,
-.stApp small {
-    color: var(--pp-muted) !important;
+.stApp [data-testid="stCaptionContainer"] * {
+    color: var(--muted) !important;
     opacity: 1 !important;
 }
 
-/* Form control text, placeholders and dropdown values. */
-.stApp input,
-.stApp textarea,
-.stApp [data-baseweb="input"] input,
-.stApp [data-baseweb="textarea"] textarea,
-.stApp [data-baseweb="select"] input,
-.stApp [data-baseweb="select"] div {
-    color: var(--pp-text) !important;
-    -webkit-text-fill-color: var(--pp-text) !important;
+.stApp a,
+.stApp a:visited {
+    color: var(--accent) !important;
 }
 
-.stApp input::placeholder,
-.stApp textarea::placeholder {
-    color: #8b98ac !important;
-    -webkit-text-fill-color: #8b98ac !important;
-    opacity: 1 !important;
+/* ---------- brand header ---------- */
+.pp-hero {
+    padding: 0.6rem 0 1.2rem 0;
+    margin-bottom: 0.25rem;
+    border-bottom: 1px solid var(--line);
 }
 
-/* Buttons: force nested text/icon visibility as BaseWeb may style descendants. */
-.stApp div.stButton > button *,
-.stApp button[kind="secondary"] *,
-.stApp button[kind="tertiary"] * {
-    color: #243047 !important;
-    opacity: 1 !important;
+.pp-brandline {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin-bottom: .8rem;
 }
 
-.stApp div.stButton > button[kind="primary"] *,
-.stApp button[kind="primary"] * {
-    color: #ffffff !important;
-    opacity: 1 !important;
+.pp-brandmark {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 800;
+    font-size: .82rem;
+    letter-spacing: -.02em;
 }
 
-/* Tabs: explicitly style every descendant so titles such as
-   "Explore Questions" stay visible in both selected and unselected states. */
-.stApp button[data-baseweb="tab"],
-.stApp button[data-baseweb="tab"] *,
-.stApp button[data-baseweb="tab"] p,
-.stApp button[data-baseweb="tab"] span,
-.stApp button[data-baseweb="tab"] div {
-    color: #4d5b70 !important;
-    -webkit-text-fill-color: #4d5b70 !important;
-    opacity: 1 !important;
-    visibility: visible !important;
+.pp-brandname {
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: -.02em;
 }
 
-.stApp button[data-baseweb="tab"][aria-selected="true"],
-.stApp button[data-baseweb="tab"][aria-selected="true"] *,
-.stApp button[data-baseweb="tab"][aria-selected="true"] p,
-.stApp button[data-baseweb="tab"][aria-selected="true"] span,
-.stApp button[data-baseweb="tab"][aria-selected="true"] div {
-    color: #263fbc !important;
-    -webkit-text-fill-color: #263fbc !important;
-    opacity: 1 !important;
+.pp-kicker {
+    color: var(--accent);
+    font-size: .73rem;
+    font-weight: 800;
+    letter-spacing: .10em;
+    text-transform: uppercase;
+    margin-bottom: .5rem;
 }
 
-/* Expander summary and alert text can otherwise inherit theme colors. */
-.stApp details summary,
-.stApp details summary *,
-.stApp [data-testid="stExpander"] summary,
-.stApp [data-testid="stExpander"] summary * {
-    color: #334155 !important;
-    -webkit-text-fill-color: #334155 !important;
-    opacity: 1 !important;
+.pp-title {
+    max-width: 860px;
+    color: var(--text);
+    font-size: clamp(2.15rem, 4vw, 3.35rem);
+    line-height: 1.06;
+    font-weight: 820;
+    letter-spacing: -.045em;
+    margin: 0;
 }
 
+.pp-subtitle {
+    max-width: 760px;
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1.65;
+    margin-top: .8rem;
+}
 
-/* Top-level app navigation: session-state controlled radio styled as tabs.
-   Unlike st.tabs, this can be changed programmatically from a button callback. */
+/* ---------- top navigation ---------- */
 div[data-testid="stRadio"] > label {
     display: none !important;
 }
@@ -208,282 +193,191 @@ div[data-testid="stRadio"] > label {
 div[data-testid="stRadio"] div[role="radiogroup"] {
     display: flex !important;
     flex-direction: row !important;
-    gap: 6px !important;
-    padding: 6px !important;
-    margin: 0.55rem 0 1.15rem 0 !important;
-    border: 1px solid #d4deec !important;
-    border-radius: 14px !important;
-    background: #eaf0f8 !important;
+    gap: 1.55rem !important;
+    padding: 0 !important;
+    margin: .85rem 0 1.65rem 0 !important;
+    border-bottom: 1px solid var(--line) !important;
+    background: transparent !important;
     overflow-x: auto !important;
 }
 
 div[data-testid="stRadio"] div[role="radiogroup"] > label {
+    position: relative;
     display: flex !important;
     flex: 0 0 auto !important;
     align-items: center !important;
-    min-height: 42px !important;
-    padding: 0.48rem 1rem !important;
-    border-radius: 10px !important;
-    border: 1px solid transparent !important;
+    min-height: 43px !important;
+    padding: 0 0 .72rem 0 !important;
+    border: 0 !important;
     background: transparent !important;
     cursor: pointer !important;
 }
 
-div[data-testid="stRadio"] div[role="radiogroup"] > label p {
-    color: #4d5b70 !important;
-    font-weight: 760 !important;
-    white-space: nowrap !important;
-    margin: 0 !important;
-}
-
-div[data-testid="stRadio"] div[role="radiogroup"] > label:has(input:checked) {
-    background: #ffffff !important;
-    border-color: #d7e0ed !important;
-    box-shadow: 0 2px 9px rgba(45, 65, 116, 0.10) !important;
-}
-
-div[data-testid="stRadio"] div[role="radiogroup"] > label:has(input:checked) p {
-    color: #263fbc !important;
-}
-
-/* Hide native radio circles inside top navigation only. */
 div[data-testid="stRadio"] div[role="radiogroup"] > label > div:first-child {
     display: none !important;
 }
 
-/* Example-market CTA: make the action clearly look like a button. */
-.pp-example-cta-hint {
-    color: #68758a;
-    font-size: 0.78rem;
-    margin: 0.25rem 0 0.45rem 0;
+div[data-testid="stRadio"] div[role="radiogroup"] > label p {
+    margin: 0 !important;
+    color: #738096 !important;
+    font-size: .92rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
 }
 
-
-/* Metrics */
-.stApp [data-testid="stMetricLabel"],
-.stApp [data-testid="stMetricLabel"] *,
-.stApp [data-testid="stMetricDelta"],
-.stApp [data-testid="stMetricDelta"] * {
-    color: #68758a !important;
-    opacity: 1 !important;
+div[data-testid="stRadio"] div[role="radiogroup"] > label:has(input:checked) p {
+    color: var(--text) !important;
 }
 
-.stApp [data-testid="stMetricValue"],
-.stApp [data-testid="stMetricValue"] * {
-    color: #1e293b !important;
-    opacity: 1 !important;
+div[data-testid="stRadio"] div[role="radiogroup"] > label:has(input:checked)::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--accent);
 }
 
-/* Links remain clearly identifiable on light surfaces. */
-.stApp a,
-.stApp a:visited {
-    color: #3156c8 !important;
-    text-decoration-color: rgba(49, 86, 200, 0.35) !important;
-}
-
-.block-container {
-    max-width: 1220px;
-    padding-top: 1.7rem;
-    padding-bottom: 3.5rem;
-}
-
-h1, h2, h3, h4, h5, h6 {
-    color: #182235 !important;
-}
-
-.stApp p,
-.stApp label {
-    color: #334155;
-}
-
-p, label, span, div {
-    color: inherit;
-}
-
-/* Hero */
-.pp-hero {
-    border: 1px solid #d7e1f2;
-    border-radius: 24px;
-    padding: 28px 30px 26px 30px;
-    margin-bottom: 1.15rem;
-    background:
-        radial-gradient(circle at 90% 10%, rgba(91, 103, 255, 0.15), transparent 32%),
-        radial-gradient(circle at 8% 100%, rgba(56, 173, 255, 0.12), transparent 34%),
-        linear-gradient(145deg, #ffffff, #f7f9ff);
-    box-shadow: 0 12px 34px rgba(42, 57, 89, 0.07);
-}
-
-.pp-kicker {
-    display: inline-block;
-    font-size: 0.76rem;
+/* ---------- section hierarchy ---------- */
+.pp-section-label {
+    color: #8792a5;
+    font-size: .69rem;
     font-weight: 800;
-    letter-spacing: 0.09em;
+    letter-spacing: .11em;
     text-transform: uppercase;
-    color: #5d6a80;
-    margin-bottom: 0.45rem;
+    margin: 0 0 .25rem 0;
 }
 
-.pp-title {
-    color: #16213a;
-    font-size: clamp(2.15rem, 5vw, 3.55rem);
-    line-height: 1.02;
-    font-weight: 820;
-    letter-spacing: -0.045em;
-    margin: 0;
-}
-
-.pp-subtitle {
-    max-width: 780px;
-    color: #5c697e;
-    font-size: 1.03rem;
-    line-height: 1.58;
-    margin-top: 0.8rem;
+.pp-section-intro {
+    max-width: 740px;
+    color: var(--muted);
+    font-size: .95rem;
+    line-height: 1.6;
     margin-bottom: 1rem;
 }
 
-.pp-pill-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.pp-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.34rem;
-    border: 1px solid #d9e2ef;
-    border-radius: 999px;
-    padding: 0.38rem 0.68rem;
-    font-size: 0.82rem;
-    font-weight: 700;
-    color: #48566d;
-    background: #ffffff;
-}
-
-/* Section labels */
-.pp-section-label {
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.10em;
-    text-transform: uppercase;
-    color: #77839a;
-    margin: 0.15rem 0 0.22rem 0;
-}
-
-/* Native bordered Streamlit containers become clear white cards */
+/* ---------- containers ---------- */
 div[data-testid="stVerticalBlockBorderWrapper"] {
-    background: var(--pp-surface) !important;
-    border: 1px solid var(--pp-border) !important;
-    border-radius: 18px !important;
-    box-shadow: 0 5px 18px rgba(42, 57, 89, 0.04);
+    background: var(--surface) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 3px 12px rgba(32, 45, 72, .035);
 }
 
-/* Inputs */
+/* ---------- inputs ---------- */
 div[data-baseweb="input"] > div,
 div[data-baseweb="textarea"] > div,
 textarea,
 input {
-    background: #ffffff !important;
-    color: #182235 !important;
+    background: #fff !important;
+    color: var(--text) !important;
 }
 
 div[data-baseweb="input"] > div,
 div[data-baseweb="textarea"] > div {
-    border-color: #cfd9e7 !important;
+    border-color: var(--line-strong) !important;
+    border-radius: 10px !important;
 }
 
 textarea::placeholder,
 input::placeholder {
-    color: #96a2b5 !important;
+    color: #9aa5b6 !important;
     opacity: 1 !important;
 }
 
-/* Primary/secondary buttons */
+/* ---------- buttons ---------- */
 div.stButton > button {
-    border-radius: 11px;
-    min-height: 44px;
+    min-height: 42px;
+    border-radius: 9px;
+    border: 1px solid var(--line-strong);
+    background: #fff;
+    color: #2b3548;
     font-weight: 720;
-    border: 1px solid #cbd6e5;
-    background: #ffffff;
-    color: #243047;
+    box-shadow: none;
+}
+
+div.stButton > button:hover {
+    border-color: #b9c3d3;
+    background: #fafbfe;
 }
 
 div.stButton > button[kind="primary"] {
-    background: var(--pp-primary) !important;
-    border-color: var(--pp-primary) !important;
-    color: #ffffff !important;
+    background: var(--accent) !important;
+    border-color: var(--accent) !important;
+    color: #fff !important;
+}
+
+div.stButton > button[kind="primary"] * {
+    color: #fff !important;
 }
 
 div.stButton > button[kind="primary"]:hover {
-    background: var(--pp-primary-dark) !important;
-    border-color: var(--pp-primary-dark) !important;
+    background: var(--accent-dark) !important;
+    border-color: var(--accent-dark) !important;
 }
 
-/* Tabs: visibly separated segmented controls */
+/* ---------- nested result tabs ---------- */
 div[data-baseweb="tab-list"] {
-    gap: 5px !important;
-    padding: 5px !important;
-    margin: 0.55rem 0 1rem 0 !important;
-    border: 1px solid #d4deec !important;
-    border-radius: 14px !important;
-    background: #eaf0f8 !important;
+    gap: 1.25rem !important;
+    padding: 0 !important;
+    margin: .6rem 0 1rem 0 !important;
+    border-bottom: 1px solid var(--line) !important;
+    background: transparent !important;
     overflow-x: auto !important;
-    overflow-y: hidden !important;
-    scrollbar-width: thin;
 }
 
 button[data-baseweb="tab"] {
-    min-height: 42px !important;
     min-width: max-content !important;
-    border-radius: 10px !important;
-    padding: 0.55rem 1.05rem !important;
-    color: #4d5b70 !important;
-    font-weight: 720 !important;
+    min-height: 40px !important;
+    padding: 0 0 .7rem 0 !important;
     background: transparent !important;
     border: 0 !important;
-    overflow: visible !important;
+    color: #7a8698 !important;
+    font-weight: 700 !important;
     white-space: nowrap !important;
 }
 
-button[data-baseweb="tab"][aria-selected="true"] {
-    color: #263fbc !important;
-    background: #ffffff !important;
-    box-shadow: 0 2px 9px rgba(45, 65, 116, 0.10) !important;
-}
-
-button[data-baseweb="tab"] > div[data-testid="stMarkdownContainer"] > p {
+button[data-baseweb="tab"] *,
+button[data-baseweb="tab"] p {
     color: inherit !important;
+    opacity: 1 !important;
 }
 
-/* Metrics */
+button[data-baseweb="tab"][aria-selected="true"] {
+    color: var(--text) !important;
+    border-bottom: 2px solid var(--accent) !important;
+}
+
+/* ---------- metrics ---------- */
 [data-testid="stMetric"] {
-    border: 1px solid #dde5f0;
-    border-radius: 14px;
-    padding: 0.88rem 0.95rem;
-    background: #ffffff;
-    min-width: 0;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
 }
 
-[data-testid="stMetricLabel"] {
-    color: #6c788b !important;
-    font-size: 0.82rem;
+[data-testid="stMetricLabel"],
+[data-testid="stMetricLabel"] * {
+    color: #8792a5 !important;
+    font-size: .76rem !important;
 }
 
-[data-testid="stMetricValue"] {
-    color: #1e293b !important;
-    font-weight: 790;
+[data-testid="stMetricValue"],
+[data-testid="stMetricValue"] * {
+    color: var(--text) !important;
+    font-weight: 800 !important;
 }
 
-/* Analysis snapshot */
+/* ---------- analysis snapshot ---------- */
 .pp-analysis-shell {
-    border: 1px solid #cbd7f5;
-    border-radius: 22px;
-    padding: 24px;
-    margin: 0.35rem 0 1.2rem 0;
-    background:
-        radial-gradient(circle at 93% 8%, rgba(88, 96, 235, 0.13), transparent 36%),
-        linear-gradient(145deg, #f7f9ff, #edf3ff);
-    box-shadow: 0 12px 32px rgba(55, 72, 128, 0.08);
+    border: 1px solid #dfe5ef;
+    border-radius: 16px;
+    padding: 1.3rem 1.4rem;
+    margin: .4rem 0 1.25rem 0;
+    background: #fff;
+    box-shadow: 0 4px 18px rgba(32, 45, 72, .035);
 }
 
 .pp-analysis-topline {
@@ -491,256 +385,276 @@ button[data-baseweb="tab"] > div[data-testid="stMarkdownContainer"] > p {
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 0.8rem;
+    margin-bottom: .8rem;
 }
 
 .pp-analysis-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.38rem;
-    padding: 0.34rem 0.62rem;
-    border-radius: 999px;
-    border: 1px solid #c6d2f4;
-    background: #ffffff;
-    color: #4054b8;
-    font-size: 0.75rem;
+    color: var(--accent);
+    font-size: .68rem;
     font-weight: 820;
-    letter-spacing: 0.07em;
+    letter-spacing: .09em;
     text-transform: uppercase;
 }
 
 .pp-analysis-question {
-    color: #182235;
-    font-size: clamp(1.18rem, 2.2vw, 1.52rem);
-    line-height: 1.35;
+    color: var(--text);
+    font-size: clamp(1.2rem, 2vw, 1.48rem);
+    line-height: 1.36;
     font-weight: 790;
-    letter-spacing: -0.018em;
-    margin: 0 0 0.3rem 0;
+    letter-spacing: -.025em;
+    margin-bottom: .3rem;
 }
 
 .pp-analysis-event {
-    color: #68758a;
-    font-size: 0.89rem;
-    margin-bottom: 1.2rem;
+    color: var(--muted);
+    font-size: .86rem;
+    margin-bottom: 1.15rem;
 }
 
 .pp-kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.72rem;
+    border-top: 1px solid var(--line);
 }
 
 .pp-kpi {
     min-width: 0;
-    border: 1px solid #d7e0ef;
-    border-radius: 15px;
-    padding: 0.95rem 1rem;
-    background: rgba(255, 255, 255, 0.90);
-    box-shadow: 0 3px 10px rgba(48, 62, 102, 0.04);
+    padding: 1rem 1rem .15rem 0;
+    background: transparent;
+}
+
+.pp-kpi + .pp-kpi {
+    border-left: 1px solid var(--line);
+    padding-left: 1rem;
 }
 
 .pp-kpi-label {
-    color: #6c788b;
-    font-size: 0.74rem;
-    line-height: 1.25;
-    margin-bottom: 0.34rem;
+    color: #8792a5;
+    font-size: .72rem;
+    margin-bottom: .32rem;
 }
 
 .pp-kpi-value {
-    color: #1d293b;
-    font-size: clamp(1.08rem, 2vw, 1.58rem);
-    line-height: 1.15;
+    color: var(--text);
+    font-size: clamp(1rem, 1.8vw, 1.42rem);
+    line-height: 1.18;
     font-weight: 810;
-    letter-spacing: -0.025em;
+    letter-spacing: -.025em;
     overflow-wrap: anywhere;
 }
 
-.pp-kpi-value.pp-demand-high { color: #c54a2e; }
-.pp-kpi-value.pp-demand-medium { color: #9a6500; }
-.pp-kpi-value.pp-demand-low { color: #176fb2; }
+.pp-demand-high { color: #b84b32; }
+.pp-demand-medium { color: #936100; }
+.pp-demand-low { color: #246da3; }
 
-/* Overview summary */
+/* ---------- overview summary ---------- */
 .pp-summary-card {
-    border: 1px solid #d6e0f0;
-    border-radius: 16px;
-    padding: 1.15rem 1.25rem;
-    background: #ffffff;
-    box-shadow: 0 4px 16px rgba(42, 57, 89, 0.04);
+    border: 0;
+    padding: .15rem 0 .1rem 0;
+    background: transparent;
 }
 
 .pp-summary-headline {
-    color: #1c2940;
+    color: var(--text);
     font-size: 1.02rem;
     line-height: 1.5;
     font-weight: 780;
-    margin-bottom: 0.56rem;
+    margin-bottom: .5rem;
 }
 
 .pp-summary-copy {
-    color: #526078;
-    font-size: 0.95rem;
-    line-height: 1.64;
+    color: #566276;
+    font-size: .94rem;
+    line-height: 1.65;
 }
 
 .pp-summary-stat {
-    color: #253eaa;
+    color: var(--accent);
     font-weight: 800;
 }
 
 .pp-summary-note {
-    color: #7a8799;
-    margin-top: 0.8rem;
-    padding-top: 0.72rem;
-    border-top: 1px solid #e1e8f1;
-    font-size: 0.79rem;
+    color: #8a95a6;
+    margin-top: .85rem;
+    padding-top: .75rem;
+    border-top: 1px solid var(--line);
+    font-size: .78rem;
 }
 
-
-/* Historical-comparable list */
+/* ---------- historical list ---------- */
 .pp-history-list {
     display: flex;
     flex-direction: column;
-    gap: 0.62rem;
-    margin: 0.35rem 0 0.75rem 0;
+    gap: .5rem;
+    margin: .45rem 0 .85rem 0;
 }
 
 .pp-history-row {
     display: grid;
-    grid-template-columns: 54px minmax(0, 1fr) 112px 145px;
-    gap: 0.9rem;
+    grid-template-columns: 42px minmax(0, 1fr) 100px 130px;
+    gap: .9rem;
     align-items: center;
-    padding: 0.88rem 0.95rem;
-    border: 1px solid #dce5f0;
-    border-radius: 14px;
-    background: #ffffff;
-    box-shadow: 0 2px 9px rgba(42, 57, 89, 0.035);
+    padding: .8rem .1rem;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+}
+
+.pp-history-row:last-child {
+    border-bottom: 0;
 }
 
 .pp-history-rank {
-    width: 38px;
-    height: 38px;
+    width: 32px;
+    height: 32px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 11px;
-    background: #eef2ff;
-    color: #4054b8;
-    font-size: 0.80rem;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: .76rem;
     font-weight: 820;
 }
 
 .pp-history-question {
-    color: #1e293b;
-    font-size: 0.93rem;
-    line-height: 1.4;
-    font-weight: 720;
+    color: var(--text);
+    font-size: .91rem;
+    line-height: 1.42;
+    font-weight: 700;
 }
 
 .pp-history-meta {
-    color: #7a8799;
-    font-size: 0.77rem;
-    margin-top: 0.22rem;
+    color: #8b96a8;
+    font-size: .74rem;
+    margin-top: .2rem;
 }
 
 .pp-history-stat-label {
-    color: #8390a4;
-    font-size: 0.70rem;
+    color: #929cad;
+    font-size: .66rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 0.16rem;
+    letter-spacing: .06em;
+    margin-bottom: .15rem;
 }
 
 .pp-history-stat-value {
-    color: #24324a;
-    font-size: 0.92rem;
-    font-weight: 790;
+    color: #334056;
+    font-size: .88rem;
+    font-weight: 780;
 }
 
 .pp-history-similarity {
-    color: #3156c8;
+    color: var(--accent);
 }
 
 .pp-chart-shell {
-    border: 1px solid #dce5f0;
-    border-radius: 16px;
-    padding: 0.75rem 0.85rem 0.35rem 0.85rem;
-    background: #ffffff;
-    box-shadow: 0 3px 12px rgba(42, 57, 89, 0.04);
-    margin-top: 0.35rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: .55rem .7rem .2rem .7rem;
+    background: #fff;
+    margin-top: .4rem;
 }
 
-@media (max-width: 800px) {
+/* ---------- explore cards ---------- */
+.pp-card-title {
+    color: var(--text);
+    font-weight: 760;
+    font-size: .96rem;
+    line-height: 1.45;
+    margin-bottom: .15rem;
+}
+
+.pp-card-copy,
+.pp-example-cta-hint {
+    color: var(--muted);
+    font-size: .78rem;
+}
+
+.pp-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: .22rem .48rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: #647087;
+    font-size: .68rem;
+    font-weight: 740;
+    letter-spacing: .02em;
+}
+
+/* ---------- tables / expanders ---------- */
+div[data-testid="stDataFrame"] {
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    overflow: hidden;
+    background: #fff;
+}
+
+details {
+    background: #fff !important;
+    border-color: var(--line) !important;
+    border-radius: 10px !important;
+}
+
+.stAlert {
+    border-radius: 10px;
+}
+
+/* ---------- footer ---------- */
+.pp-footer {
+    color: #909bad;
+    margin-top: 2.6rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    font-size: .78rem;
+    text-align: center;
+}
+
+@media (max-width: 820px) {
+    .pp-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .pp-kpi:nth-child(3) {
+        border-left: 0;
+        padding-left: 0;
+        border-top: 1px solid var(--line);
+        margin-top: .8rem;
+        padding-top: .8rem;
+    }
+
+    .pp-kpi:nth-child(4) {
+        border-top: 1px solid var(--line);
+        margin-top: .8rem;
+        padding-top: .8rem;
+    }
+
     .pp-history-row {
-        grid-template-columns: 46px minmax(0, 1fr);
+        grid-template-columns: 38px minmax(0, 1fr);
     }
 
     .pp-history-row > div:nth-child(3),
     .pp-history-row > div:nth-child(4) {
         grid-column: 2;
-        display: inline-block;
     }
 }
 
-
-/* Alerts, tables, expanders */
-.stAlert {
-    border-radius: 13px;
-}
-
-div[data-testid="stDataFrame"] {
-    border: 1px solid #dbe4ef;
-    border-radius: 13px;
-    overflow: hidden;
-    background: #ffffff;
-}
-
-details {
-    background: #ffffff !important;
-    border-color: #dbe4ef !important;
-    border-radius: 12px !important;
-}
-
-/* Progress */
-div[data-testid="stProgress"] > div > div {
-    border-radius: 999px;
-}
-
-/* Footer */
-.pp-footer {
-    color: #7a8799;
-    margin-top: 2.8rem;
-    padding-top: 1.1rem;
-    border-top: 1px solid #dbe3ed;
-    font-size: 0.82rem;
-    text-align: center;
-}
-
-@media (max-width: 720px) {
-    .pp-hero {
-        padding: 22px 20px;
-        border-radius: 19px;
-    }
-
+@media (max-width: 640px) {
     .pp-title {
-        font-size: 2.25rem;
-    }
-
-    .pp-analysis-shell {
-        padding: 18px;
-        border-radius: 18px;
+        font-size: 2.1rem;
     }
 
     .pp-kpi-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: 1fr;
     }
 
-    .pp-kpi-value {
-        font-size: 1.12rem;
-    }
-
-    button[data-baseweb="tab"] {
-        padding: 0.5rem 0.62rem !important;
-        font-size: 0.86rem !important;
+    .pp-kpi + .pp-kpi {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+        padding-left: 0;
+        margin-top: .7rem;
+        padding-top: .75rem;
     }
 }
 </style>
@@ -752,17 +666,15 @@ div[data-testid="stProgress"] > div > div {
 def render_hero():
     html = (
         '<div class="pp-hero">'
-        '<div class="pp-kicker">Prediction-market intelligence</div>'
-        '<div class="pp-title">PolyPulse</div>'
-        '<div class="pp-subtitle">'
-        'Estimate pre-launch trading demand, benchmark a proposed market against '
-        'historical Polymarket observations, and surface the evidence behind the result.'
+        '<div class="pp-brandline">'
+        '<span class="pp-brandmark">P</span>'
+        '<span class="pp-brandname">PolyPulse</span>'
         '</div>'
-        '<div class="pp-pill-row">'
-        '<span class="pp-pill">🛡️ Validity first</span>'
-        '<span class="pp-pill">📈 Demand forecast</span>'
-        '<span class="pp-pill">🧭 Historical comparables</span>'
-        '<span class="pp-pill">⚙️ Hugging Face models</span>'
+        '<div class="pp-kicker">Pre-launch market intelligence</div>'
+        '<div class="pp-title">Understand expected demand before a prediction market opens.</div>'
+        '<div class="pp-subtitle">'
+        'Validate the proposition, estimate demand, and compare it with historical '
+        'Polymarket markets in one focused workflow.'
         '</div>'
         '</div>'
     )
@@ -965,7 +877,7 @@ def show_result_header(results):
     html = (
         '<div class="pp-analysis-shell">'
         '<div class="pp-analysis-topline">'
-        '<span class="pp-analysis-badge">✦ Analysis snapshot</span>'
+        '<span class="pp-analysis-badge">Analysis snapshot</span>'
         '</div>'
         f'<div class="pp-analysis-question">{escape(str(results["question"]))}</div>'
         f'<div class="pp-analysis-event">{escape(event_text)}</div>'
@@ -1368,7 +1280,7 @@ def show_analysis_results(result):
     show_result_header(result)
 
     overview_tab, demand_tab, history_tab = st.tabs(
-        ["⚡ Overview", "📈 Demand", "🧭 Historical evidence"]
+        ["Overview", "Demand", "Historical evidence"]
     )
 
     with overview_tab:
@@ -1505,16 +1417,19 @@ def load_example_into_form(question, event_title):
     st.session_state["market_question"] = str(question)
     st.session_state["market_event_title"] = str(event_title or "")
     st.session_state.pop("polypulse_analysis", None)
-    st.session_state["top_nav"] = "📊 Market Analysis"
+    st.session_state["top_nav"] = "Market Analysis"
     st.session_state["example_loaded_notice"] = True
 
 
 def show_popular_questions():
     section_label("Explore")
-    st.subheader("Start from a real historical market")
-    st.write(
-        "Browse high-volume historical questions with strong coverage in the current "
-        "reference index. Pick one to load it directly into Market Analysis."
+    st.subheader("Explore historical markets")
+    st.markdown(
+        '<div class="pp-section-intro">'
+        'Browse real historical markets with strong coverage in the reference index. '
+        'Choose one to load it directly into Market Analysis.'
+        '</div>',
+        unsafe_allow_html=True,
     )
 
     try:
@@ -1536,10 +1451,10 @@ def show_popular_questions():
         return
 
     raw_categories = list(dict.fromkeys(table["Category"]))
-    category_options = {"🌐 All categories": None}
+    category_options = {"All categories": None}
     for category in raw_categories:
         icon = CATEGORY_ICONS.get(str(category), "📌")
-        category_options[f"{icon} {category}"] = category
+        category_options[str(category)] = category
 
     selected_label = st.selectbox(
         "Filter by category",
@@ -1562,7 +1477,10 @@ def show_popular_questions():
             with st.container(border=True):
                 category = str(row["Category"])
                 icon = CATEGORY_ICONS.get(category, "📌")
-                st.caption(f"{icon} {category}")
+                st.markdown(
+                    f'<span class="pp-tag">{escape(category)}</span>',
+                    unsafe_allow_html=True,
+                )
                 st.markdown(
                     f'<div class="pp-card-title">{escape(str(row["Market question"]))}</div>',
                     unsafe_allow_html=True,
@@ -1585,7 +1503,7 @@ def show_popular_questions():
                     unsafe_allow_html=True,
                 )
                 st.button(
-                    "📊 Use in Market Analysis",
+                    "Use in Market Analysis",
                     key=f"use_example_{selected_category}_{idx}_{row['Market question'][:30]}",
                     type="primary",
                     use_container_width=True,
@@ -1636,24 +1554,27 @@ def show_popular_questions():
 def model_card(label, icon, title, role, model_name):
     with st.container(border=True):
         section_label(label)
-        st.markdown(f"### {icon} {title}")
+        st.markdown(f"### {title}")
         st.write(role)
         st.caption(model_name)
 
 
 def show_performance():
     section_label("Architecture")
-    st.subheader("Three-stage model pipeline")
-    st.write(
-        "PolyPulse separates input validation, demand classification and historical "
-        "retrieval so that each model has one clear responsibility."
+    st.subheader("Model architecture")
+    st.markdown(
+        '<div class="pp-section-intro">'
+        'Three specialised models handle validation, demand classification and historical '
+        'retrieval independently, keeping the workflow interpretable and modular.'
+        '</div>',
+        unsafe_allow_html=True,
     )
 
     c1, c2, c3 = st.columns(3)
     with c1:
         model_card(
             "Stage 1 · Model 3",
-            "🛡️",
+            "",
             "Question validity",
             "Rejects inputs that are not clear, resolvable prediction-market propositions.",
             "2610gnam05/nli-deberta-v3-small-demand",
@@ -1661,7 +1582,7 @@ def show_performance():
     with c2:
         model_card(
             "Stage 2 · Model 1",
-            "📈",
+            "",
             "Demand prediction",
             "Classifies expected pre-launch demand as Low, Medium or High.",
             "2610gnam05/polypulse-deberta-v3-base-demand",
@@ -1669,7 +1590,7 @@ def show_performance():
     with c3:
         model_card(
             "Stage 3 · Model 2",
-            "🧭",
+            "",
             "Historical retrieval",
             "Finds semantically similar historical markets and observed trading volumes.",
             "sentence-transformers/all-MiniLM-L6-v2",
@@ -1753,12 +1674,12 @@ inject_styles()
 render_hero()
 
 if st.session_state.pop("example_loaded_notice", False):
-    st.toast("Example loaded in Market Analysis.", icon="✅")
+    st.toast("Example loaded in Market Analysis.")
 
 NAV_OPTIONS = [
-    "📊 Market Analysis",
-    "✨ Explore Questions",
-    "🧠 Model Stack",
+    "Market Analysis",
+    "Explore Questions",
+    "Model Stack",
 ]
 
 if "top_nav" not in st.session_state:
@@ -1772,12 +1693,15 @@ current_page = st.radio(
     label_visibility="collapsed",
 )
 
-if current_page == "📊 Market Analysis":
+if current_page == "Market Analysis":
     section_label("Analyse")
-    st.subheader("Test a proposed prediction market")
-    st.write(
-        "Enter the market proposition exactly as a user would see it. PolyPulse first "
-        "checks that it is a valid, resolvable prediction-market proposition."
+    st.subheader("Analyse a proposed market")
+    st.markdown(
+        '<div class="pp-section-intro">'
+        'Enter the proposition as it would appear to users. PolyPulse validates it first, '
+        'then runs demand prediction and historical comparison.'
+        '</div>',
+        unsafe_allow_html=True,
     )
 
     def clear_previous_analysis():
@@ -1866,10 +1790,10 @@ if current_page == "📊 Market Analysis":
                 st.markdown("## Analysis")
                 show_analysis_results(result)
 
-elif current_page == "✨ Explore Questions":
+elif current_page == "Explore Questions":
     show_popular_questions()
 
-elif current_page == "🧠 Model Stack":
+elif current_page == "Model Stack":
     show_performance()
 
 st.markdown(
