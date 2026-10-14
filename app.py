@@ -56,312 +56,428 @@ st.set_page_config(
 # ---------------------------------------------------------------------------
 
 def inject_styles():
-    """Small, dependency-free design system for the Streamlit UI."""
+    """Light, high-contrast visual system with clear tab and section separation."""
     st.markdown(
         """
-        <style>
-        .block-container {
-            max-width: 1220px;
-            padding-top: 1.8rem;
-            padding-bottom: 3.5rem;
-        }
+<style>
+:root {
+    --pp-bg: #f4f7fb;
+    --pp-surface: #ffffff;
+    --pp-surface-soft: #f8faff;
+    --pp-border: #d9e2ef;
+    --pp-border-strong: #c6d3e4;
+    --pp-text: #182235;
+    --pp-muted: #677489;
+    --pp-primary: #3f5bd8;
+    --pp-primary-dark: #2f46b4;
+    --pp-primary-soft: #eef2ff;
+    --pp-blue-soft: #edf7ff;
+    --pp-success: #16794c;
+    --pp-warning: #a96800;
+    --pp-danger: #b73838;
+}
 
-        .pp-hero {
-            border: 1px solid rgba(128, 128, 128, 0.22);
-            border-radius: 24px;
-            padding: 28px 30px 26px 30px;
-            margin-bottom: 1.1rem;
-            background:
-                radial-gradient(circle at 88% 8%, rgba(123, 97, 255, 0.18), transparent 30%),
-                radial-gradient(circle at 8% 96%, rgba(36, 188, 255, 0.12), transparent 34%),
-                rgba(127, 127, 127, 0.035);
-        }
+html, body, .stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"] {
+    background: var(--pp-bg) !important;
+    color: var(--pp-text) !important;
+}
 
-        .pp-kicker {
-            display: inline-block;
-            font-size: 0.76rem;
-            font-weight: 750;
-            letter-spacing: 0.09em;
-            text-transform: uppercase;
-            opacity: 0.68;
-            margin-bottom: 0.45rem;
-        }
+[data-testid="stHeader"] {
+    background: rgba(244, 247, 251, 0.94) !important;
+}
 
-        .pp-title {
-            font-size: clamp(2.15rem, 5vw, 3.55rem);
-            line-height: 1.02;
-            font-weight: 820;
-            letter-spacing: -0.045em;
-            margin: 0;
-        }
+[data-testid="stToolbar"],
+[data-testid="stDecoration"] {
+    color: var(--pp-text) !important;
+}
 
-        .pp-subtitle {
-            max-width: 760px;
-            font-size: 1.03rem;
-            line-height: 1.55;
-            opacity: 0.76;
-            margin-top: 0.8rem;
-            margin-bottom: 1rem;
-        }
+.block-container {
+    max-width: 1220px;
+    padding-top: 1.7rem;
+    padding-bottom: 3.5rem;
+}
 
-        .pp-pill-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
+h1, h2, h3, h4, h5, h6,
+p, label, span, div {
+    color: inherit;
+}
 
-        .pp-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.34rem;
-            border: 1px solid rgba(128, 128, 128, 0.22);
-            border-radius: 999px;
-            padding: 0.38rem 0.68rem;
-            font-size: 0.82rem;
-            font-weight: 600;
-            background: rgba(127, 127, 127, 0.055);
-        }
+/* Hero */
+.pp-hero {
+    border: 1px solid #d7e1f2;
+    border-radius: 24px;
+    padding: 28px 30px 26px 30px;
+    margin-bottom: 1.15rem;
+    background:
+        radial-gradient(circle at 90% 10%, rgba(91, 103, 255, 0.15), transparent 32%),
+        radial-gradient(circle at 8% 100%, rgba(56, 173, 255, 0.12), transparent 34%),
+        linear-gradient(145deg, #ffffff, #f7f9ff);
+    box-shadow: 0 12px 34px rgba(42, 57, 89, 0.07);
+}
 
-        .pp-section-label {
-            font-size: 0.72rem;
-            font-weight: 760;
-            letter-spacing: 0.09em;
-            text-transform: uppercase;
-            opacity: 0.58;
-            margin: 0.15rem 0 0.2rem 0;
-        }
+.pp-kicker {
+    display: inline-block;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: #5d6a80;
+    margin-bottom: 0.45rem;
+}
 
-        .pp-result-question {
-            font-size: 1.2rem;
-            font-weight: 680;
-            line-height: 1.42;
-            margin: 0.2rem 0 0.35rem 0;
-        }
+.pp-title {
+    color: #16213a;
+    font-size: clamp(2.15rem, 5vw, 3.55rem);
+    line-height: 1.02;
+    font-weight: 820;
+    letter-spacing: -0.045em;
+    margin: 0;
+}
 
-        .pp-analysis-shell {
-            position: relative;
-            overflow: hidden;
-            border: 1px solid rgba(104, 125, 255, 0.30);
-            border-radius: 24px;
-            padding: 24px;
-            margin: 0.35rem 0 1.2rem 0;
-            background:
-                radial-gradient(circle at 92% 12%, rgba(124, 92, 255, 0.20), transparent 34%),
-                radial-gradient(circle at 5% 100%, rgba(42, 174, 255, 0.13), transparent 32%),
-                linear-gradient(145deg, rgba(74, 93, 255, 0.105), rgba(127, 127, 127, 0.025));
-            box-shadow: 0 18px 46px rgba(0, 0, 0, 0.12);
-        }
+.pp-subtitle {
+    max-width: 780px;
+    color: #5c697e;
+    font-size: 1.03rem;
+    line-height: 1.58;
+    margin-top: 0.8rem;
+    margin-bottom: 1rem;
+}
 
-        .pp-analysis-topline {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            margin-bottom: 0.8rem;
-        }
+.pp-pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
 
-        .pp-analysis-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.38rem;
-            padding: 0.34rem 0.62rem;
-            border-radius: 999px;
-            border: 1px solid rgba(104, 125, 255, 0.28);
-            background: rgba(104, 125, 255, 0.09);
-            font-size: 0.75rem;
-            font-weight: 760;
-            letter-spacing: 0.07em;
-            text-transform: uppercase;
-            opacity: 0.90;
-        }
+.pp-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.34rem;
+    border: 1px solid #d9e2ef;
+    border-radius: 999px;
+    padding: 0.38rem 0.68rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #48566d;
+    background: #ffffff;
+}
 
-        .pp-analysis-question {
-            font-size: clamp(1.18rem, 2.2vw, 1.52rem);
-            line-height: 1.35;
-            font-weight: 760;
-            letter-spacing: -0.018em;
-            margin: 0 0 0.3rem 0;
-        }
+/* Section labels */
+.pp-section-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: #77839a;
+    margin: 0.15rem 0 0.22rem 0;
+}
 
-        .pp-analysis-event {
-            opacity: 0.66;
-            font-size: 0.89rem;
-            margin-bottom: 1.2rem;
-        }
+/* Native bordered Streamlit containers become clear white cards */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: var(--pp-surface) !important;
+    border: 1px solid var(--pp-border) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 5px 18px rgba(42, 57, 89, 0.04);
+}
 
-        .pp-kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 0.72rem;
-        }
+/* Inputs */
+div[data-baseweb="input"] > div,
+div[data-baseweb="textarea"] > div,
+textarea,
+input {
+    background: #ffffff !important;
+    color: #182235 !important;
+}
 
-        .pp-kpi {
-            min-width: 0;
-            border: 1px solid rgba(128, 128, 128, 0.20);
-            border-radius: 16px;
-            padding: 0.95rem 1rem;
-            background: rgba(8, 11, 18, 0.16);
-            backdrop-filter: blur(6px);
-        }
+div[data-baseweb="input"] > div,
+div[data-baseweb="textarea"] > div {
+    border-color: #cfd9e7 !important;
+}
 
-        .pp-kpi-label {
-            font-size: 0.74rem;
-            line-height: 1.25;
-            opacity: 0.63;
-            margin-bottom: 0.34rem;
-        }
+textarea::placeholder,
+input::placeholder {
+    color: #96a2b5 !important;
+    opacity: 1 !important;
+}
 
-        .pp-kpi-value {
-            font-size: clamp(1.12rem, 2.15vw, 1.72rem);
-            line-height: 1.08;
-            font-weight: 800;
-            letter-spacing: -0.025em;
-            overflow-wrap: anywhere;
-        }
+/* Primary/secondary buttons */
+div.stButton > button {
+    border-radius: 11px;
+    min-height: 44px;
+    font-weight: 720;
+    border: 1px solid #cbd6e5;
+    background: #ffffff;
+    color: #243047;
+}
 
-        .pp-kpi-value.pp-demand-high { color: #ff8a5b; }
-        .pp-kpi-value.pp-demand-medium { color: #f0bd4f; }
-        .pp-kpi-value.pp-demand-low { color: #64b5ff; }
+div.stButton > button[kind="primary"] {
+    background: var(--pp-primary) !important;
+    border-color: var(--pp-primary) !important;
+    color: #ffffff !important;
+}
 
-        .pp-summary-card {
-            border: 1px solid rgba(104, 125, 255, 0.23);
-            border-radius: 18px;
-            padding: 1.15rem 1.25rem;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.095), rgba(59, 130, 246, 0.035));
-        }
+div.stButton > button[kind="primary"]:hover {
+    background: var(--pp-primary-dark) !important;
+    border-color: var(--pp-primary-dark) !important;
+}
 
-        .pp-summary-headline {
-            font-size: 1.02rem;
-            line-height: 1.5;
-            font-weight: 760;
-            margin-bottom: 0.56rem;
-        }
+/* Tabs: visibly separated segmented controls */
+div[data-baseweb="tab-list"] {
+    gap: 5px !important;
+    padding: 5px !important;
+    margin: 0.55rem 0 1rem 0 !important;
+    border: 1px solid #d4deec !important;
+    border-radius: 14px !important;
+    background: #eaf0f8 !important;
+}
 
-        .pp-summary-copy {
-            font-size: 0.95rem;
-            line-height: 1.64;
-            opacity: 0.84;
-        }
+button[data-baseweb="tab"] {
+    min-height: 42px !important;
+    border-radius: 10px !important;
+    padding: 0.55rem 0.95rem !important;
+    color: #5b687c !important;
+    font-weight: 720 !important;
+    background: transparent !important;
+    border: 0 !important;
+}
 
-        .pp-summary-stat {
-            font-weight: 780;
-            opacity: 1;
-        }
+button[data-baseweb="tab"][aria-selected="true"] {
+    color: #263fbc !important;
+    background: #ffffff !important;
+    box-shadow: 0 2px 9px rgba(45, 65, 116, 0.10) !important;
+}
 
-        .pp-summary-note {
-            margin-top: 0.8rem;
-            padding-top: 0.72rem;
-            border-top: 1px solid rgba(128, 128, 128, 0.15);
-            font-size: 0.79rem;
-            opacity: 0.55;
-        }
+button[data-baseweb="tab"] > div[data-testid="stMarkdownContainer"] > p {
+    color: inherit !important;
+}
 
-        .pp-card-title {
-            font-weight: 720;
-            font-size: 0.98rem;
-            margin-bottom: 0.22rem;
-        }
+/* Metrics */
+[data-testid="stMetric"] {
+    border: 1px solid #dde5f0;
+    border-radius: 14px;
+    padding: 0.88rem 0.95rem;
+    background: #ffffff;
+    min-width: 0;
+}
 
-        .pp-card-copy {
-            opacity: 0.72;
-            font-size: 0.9rem;
-            line-height: 1.45;
-        }
+[data-testid="stMetricLabel"] {
+    color: #6c788b !important;
+    font-size: 0.82rem;
+}
 
-        .pp-footer {
-            margin-top: 2.8rem;
-            padding-top: 1.1rem;
-            border-top: 1px solid rgba(128,128,128,.18);
-            opacity: 0.58;
-            font-size: 0.82rem;
-            text-align: center;
-        }
+[data-testid="stMetricValue"] {
+    color: #1e293b !important;
+    font-weight: 790;
+}
 
-        [data-testid="stMetric"] {
-            border: 1px solid rgba(128, 128, 128, 0.18);
-            border-radius: 16px;
-            padding: 0.9rem 1rem;
-            background: rgba(127, 127, 127, 0.035);
-        }
+/* Analysis snapshot */
+.pp-analysis-shell {
+    border: 1px solid #cbd7f5;
+    border-radius: 22px;
+    padding: 24px;
+    margin: 0.35rem 0 1.2rem 0;
+    background:
+        radial-gradient(circle at 93% 8%, rgba(88, 96, 235, 0.13), transparent 36%),
+        linear-gradient(145deg, #f7f9ff, #edf3ff);
+    box-shadow: 0 12px 32px rgba(55, 72, 128, 0.08);
+}
 
-        [data-testid="stMetricLabel"] {
-            font-size: 0.82rem;
-            opacity: 0.72;
-        }
+.pp-analysis-topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.8rem;
+}
 
-        [data-testid="stMetricValue"] {
-            font-weight: 760;
-        }
+.pp-analysis-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
+    padding: 0.34rem 0.62rem;
+    border-radius: 999px;
+    border: 1px solid #c6d2f4;
+    background: #ffffff;
+    color: #4054b8;
+    font-size: 0.75rem;
+    font-weight: 820;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
 
-        div.stButton > button {
-            border-radius: 12px;
-            min-height: 44px;
-            font-weight: 690;
-        }
+.pp-analysis-question {
+    color: #182235;
+    font-size: clamp(1.18rem, 2.2vw, 1.52rem);
+    line-height: 1.35;
+    font-weight: 790;
+    letter-spacing: -0.018em;
+    margin: 0 0 0.3rem 0;
+}
 
-        div[data-testid="stTextArea"] textarea,
-        div[data-testid="stTextInput"] input {
-            border-radius: 12px;
-        }
+.pp-analysis-event {
+    color: #68758a;
+    font-size: 0.89rem;
+    margin-bottom: 1.2rem;
+}
 
-        div[data-testid="stTabs"] button {
-            font-weight: 650;
-        }
+.pp-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.72rem;
+}
 
-        div[data-testid="stDataFrame"] {
-            border-radius: 14px;
-            overflow: hidden;
-        }
+.pp-kpi {
+    min-width: 0;
+    border: 1px solid #d7e0ef;
+    border-radius: 15px;
+    padding: 0.95rem 1rem;
+    background: rgba(255, 255, 255, 0.90);
+    box-shadow: 0 3px 10px rgba(48, 62, 102, 0.04);
+}
 
-        .stAlert {
-            border-radius: 14px;
-        }
+.pp-kpi-label {
+    color: #6c788b;
+    font-size: 0.74rem;
+    line-height: 1.25;
+    margin-bottom: 0.34rem;
+}
 
-        @media (max-width: 720px) {
-            .pp-hero {
-                padding: 22px 20px;
-                border-radius: 19px;
-            }
-            .pp-title {
-                font-size: 2.25rem;
-            }
-            .pp-analysis-shell {
-                padding: 18px;
-                border-radius: 19px;
-            }
-            .pp-kpi-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-            .pp-kpi-value {
-                font-size: 1.18rem;
-            }
-        }
-        </style>
+.pp-kpi-value {
+    color: #1d293b;
+    font-size: clamp(1.08rem, 2vw, 1.58rem);
+    line-height: 1.15;
+    font-weight: 810;
+    letter-spacing: -0.025em;
+    overflow-wrap: anywhere;
+}
+
+.pp-kpi-value.pp-demand-high { color: #c54a2e; }
+.pp-kpi-value.pp-demand-medium { color: #9a6500; }
+.pp-kpi-value.pp-demand-low { color: #176fb2; }
+
+/* Overview summary */
+.pp-summary-card {
+    border: 1px solid #d6e0f0;
+    border-radius: 16px;
+    padding: 1.15rem 1.25rem;
+    background: #ffffff;
+    box-shadow: 0 4px 16px rgba(42, 57, 89, 0.04);
+}
+
+.pp-summary-headline {
+    color: #1c2940;
+    font-size: 1.02rem;
+    line-height: 1.5;
+    font-weight: 780;
+    margin-bottom: 0.56rem;
+}
+
+.pp-summary-copy {
+    color: #526078;
+    font-size: 0.95rem;
+    line-height: 1.64;
+}
+
+.pp-summary-stat {
+    color: #253eaa;
+    font-weight: 800;
+}
+
+.pp-summary-note {
+    color: #7a8799;
+    margin-top: 0.8rem;
+    padding-top: 0.72rem;
+    border-top: 1px solid #e1e8f1;
+    font-size: 0.79rem;
+}
+
+/* Alerts, tables, expanders */
+.stAlert {
+    border-radius: 13px;
+}
+
+div[data-testid="stDataFrame"] {
+    border: 1px solid #dbe4ef;
+    border-radius: 13px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+details {
+    background: #ffffff !important;
+    border-color: #dbe4ef !important;
+    border-radius: 12px !important;
+}
+
+/* Progress */
+div[data-testid="stProgress"] > div > div {
+    border-radius: 999px;
+}
+
+/* Footer */
+.pp-footer {
+    color: #7a8799;
+    margin-top: 2.8rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid #dbe3ed;
+    font-size: 0.82rem;
+    text-align: center;
+}
+
+@media (max-width: 720px) {
+    .pp-hero {
+        padding: 22px 20px;
+        border-radius: 19px;
+    }
+
+    .pp-title {
+        font-size: 2.25rem;
+    }
+
+    .pp-analysis-shell {
+        padding: 18px;
+        border-radius: 18px;
+    }
+
+    .pp-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .pp-kpi-value {
+        font-size: 1.12rem;
+    }
+
+    button[data-baseweb="tab"] {
+        padding: 0.5rem 0.62rem !important;
+        font-size: 0.86rem !important;
+    }
+}
+</style>
         """,
         unsafe_allow_html=True,
     )
 
 
 def render_hero():
-    st.markdown(
-        """
-        <div class="pp-hero">
-            <div class="pp-kicker">Prediction-market intelligence</div>
-            <div class="pp-title">PolyPulse</div>
-            <div class="pp-subtitle">
-                Estimate pre-launch trading demand, benchmark a proposed market against
-                historical Polymarket observations, and surface the evidence behind the result.
-            </div>
-            <div class="pp-pill-row">
-                <span class="pp-pill">🛡️ Validity first</span>
-                <span class="pp-pill">📈 Demand forecast</span>
-                <span class="pp-pill">🧭 Historical comparables</span>
-                <span class="pp-pill">⚙️ Hugging Face models</span>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    html = (
+        '<div class="pp-hero">'
+        '<div class="pp-kicker">Prediction-market intelligence</div>'
+        '<div class="pp-title">PolyPulse</div>'
+        '<div class="pp-subtitle">'
+        'Estimate pre-launch trading demand, benchmark a proposed market against '
+        'historical Polymarket observations, and surface the evidence behind the result.'
+        '</div>'
+        '<div class="pp-pill-row">'
+        '<span class="pp-pill">🛡️ Validity first</span>'
+        '<span class="pp-pill">📈 Demand forecast</span>'
+        '<span class="pp-pill">🧭 Historical comparables</span>'
+        '<span class="pp-pill">⚙️ Hugging Face models</span>'
+        '</div>'
+        '</div>'
     )
+    st.markdown(html, unsafe_allow_html=True)
 
 
 def section_label(text):
@@ -532,7 +648,7 @@ def comparable_count(history):
 # ---------------------------------------------------------------------------
 
 def show_result_header(results):
-    """Render the analysis snapshot in one responsive, visually distinct panel."""
+    """Render the analysis snapshot as safe inline HTML, not indented Markdown."""
     demand = results.get("demand")
     history = results.get("history")
 
@@ -549,62 +665,42 @@ def show_result_header(results):
     )
     n_comp = comparable_count(history)
     topic = topic_from_history(history)
-
-    if results.get("event_title"):
-        event_html = (
-            f'<div class="pp-analysis-event">Event: '
-            f'{escape(str(results["event_title"]))}</div>'
-        )
-    else:
-        event_html = '<div class="pp-analysis-event">No event title provided</div>'
-
     comparables = f"{n_comp:,}" if n_comp is not None else "—"
 
-    st.markdown(
-        f"""
-        <div class="pp-analysis-shell">
-            <div class="pp-analysis-topline">
-                <span class="pp-analysis-badge">✦ Analysis snapshot</span>
-            </div>
-
-            <div class="pp-analysis-question">
-                {escape(str(results["question"]))}
-            </div>
-            {event_html}
-
-            <div class="pp-kpi-grid">
-                <div class="pp-kpi">
-                    <div class="pp-kpi-label">Expected demand</div>
-                    <div class="pp-kpi-value {demand_class}">
-                        {escape(demand_value)}
-                    </div>
-                </div>
-
-                <div class="pp-kpi">
-                    <div class="pp-kpi-label">Historical volume band</div>
-                    <div class="pp-kpi-value">
-                        {escape(volume_band)}
-                    </div>
-                </div>
-
-                <div class="pp-kpi">
-                    <div class="pp-kpi-label">Comparable markets</div>
-                    <div class="pp-kpi-value">
-                        {escape(comparables)}
-                    </div>
-                </div>
-
-                <div class="pp-kpi">
-                    <div class="pp-kpi-label">Suggested topic</div>
-                    <div class="pp-kpi-value">
-                        {escape(topic)}
-                    </div>
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    event_text = (
+        f"Event: {results['event_title']}"
+        if results.get("event_title")
+        else "No event title provided"
     )
+
+    html = (
+        '<div class="pp-analysis-shell">'
+        '<div class="pp-analysis-topline">'
+        '<span class="pp-analysis-badge">✦ Analysis snapshot</span>'
+        '</div>'
+        f'<div class="pp-analysis-question">{escape(str(results["question"]))}</div>'
+        f'<div class="pp-analysis-event">{escape(event_text)}</div>'
+        '<div class="pp-kpi-grid">'
+        '<div class="pp-kpi">'
+        '<div class="pp-kpi-label">Expected demand</div>'
+        f'<div class="pp-kpi-value {demand_class}">{escape(demand_value)}</div>'
+        '</div>'
+        '<div class="pp-kpi">'
+        '<div class="pp-kpi-label">Historical volume band</div>'
+        f'<div class="pp-kpi-value">{escape(volume_band)}</div>'
+        '</div>'
+        '<div class="pp-kpi">'
+        '<div class="pp-kpi-label">Comparable markets</div>'
+        f'<div class="pp-kpi-value">{escape(comparables)}</div>'
+        '</div>'
+        '<div class="pp-kpi">'
+        '<div class="pp-kpi-label">Suggested topic</div>'
+        f'<div class="pp-kpi-value">{escape(topic)}</div>'
+        '</div>'
+        '</div>'
+        '</div>'
+    )
+    st.markdown(html, unsafe_allow_html=True)
 
 
 def show_demand(results, show_title=True):
@@ -827,26 +923,24 @@ def show_summary(results, show_title=True):
     elif history:
         headline = "The market could not be fully assessed."
         copy = (
-            "Demand classification is unavailable and there are too few "
-            "historical comparables to report a volume range."
+            "Demand classification is unavailable and there are too few historical "
+            "comparables to report a volume range."
         )
     else:
         headline = "No analysis result is currently available."
         copy = "Please run the market analysis again."
 
-    st.markdown(
-        f"""
-        <div class="pp-summary-card">
-            <div class="pp-summary-headline">{escape(headline)}</div>
-            <div class="pp-summary-copy">{copy}</div>
-            <div class="pp-summary-note">
-                Decision-support only. PolyPulse estimates market demand; it does not
-                predict the event outcome or recommend launching a market.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    html = (
+        '<div class="pp-summary-card">'
+        f'<div class="pp-summary-headline">{escape(headline)}</div>'
+        f'<div class="pp-summary-copy">{copy}</div>'
+        '<div class="pp-summary-note">'
+        'Decision-support only. PolyPulse estimates market demand; it does not '
+        'predict the event outcome or recommend launching a market.'
+        '</div>'
+        '</div>'
     )
+    st.markdown(html, unsafe_allow_html=True)
 
 
 def show_analysis_results(result):
@@ -855,14 +949,21 @@ def show_analysis_results(result):
     overview_tab, demand_tab, history_tab = st.tabs(
         ["⚡ Overview", "📈 Demand", "🧭 Historical evidence"]
     )
+
     with overview_tab:
-        show_summary(result, show_title=False)
+        with st.container(border=True):
+            section_label("Executive view")
+            show_summary(result, show_title=False)
 
     with demand_tab:
-        show_demand(result, show_title=False)
+        with st.container(border=True):
+            section_label("Forecast")
+            show_demand(result, show_title=False)
 
     with history_tab:
-        show_history(result, show_title=False)
+        with st.container(border=True):
+            section_label("Evidence")
+            show_history(result, show_title=False)
 
 
 # ---------------------------------------------------------------------------
