@@ -28,8 +28,8 @@ INVALID_HYPOTHESIS = (
 
 # Conservative fail-closed gate. This is an operating threshold, not a calibrated
 # probability threshold. It should be benchmarked on a small held-out validity set.
-VALIDITY_THRESHOLD = 0.60
-MIN_VALID_ENTAILMENT = 0.50
+VALIDITY_THRESHOLD = 0.50
+MIN_VALID_ENTAILMENT = 0.20
 
 
 class ValidityModelError(RuntimeError):
