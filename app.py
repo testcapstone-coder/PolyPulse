@@ -538,12 +538,44 @@ with market_tab:
             if validity is None:
                 st.error("Please enter a clear, resolvable prediction-market proposition.")
 
-            # Invalid input: show ONLY the requested message.
+            # Invalid input: show the error plus the full validity-model decision details.
             elif not validity.get("is_valid", False):
-                st.error(
-                    "Please enter a clear, resolvable prediction-market proposition. "
-                    f"Model validity score: {validity.get('validity_score', 0.0):.1%}"
+                st.error("Please enter a clear, resolvable prediction-market proposition.")
+
+                st.markdown("**Validity model details**")
+                detail_col1, detail_col2, detail_col3 = st.columns(3)
+                detail_col1.metric(
+                    "Model validity score",
+                    f"{validity.get('validity_score', 0.0):.1%}",
                 )
+                detail_col2.metric(
+                    "Valid entailment",
+                    f"{validity.get('valid_entailment', 0.0):.1%}",
+                )
+                detail_col3.metric(
+                    "Invalid entailment",
+                    f"{validity.get('invalid_entailment', 0.0):.1%}",
+                )
+
+                threshold_col1, threshold_col2 = st.columns(2)
+                threshold_col1.metric(
+                    "Validity threshold",
+                    f"{validity.get('validity_threshold', 0.0):.1%}",
+                )
+                threshold_col2.metric(
+                    "Minimum valid entailment",
+                    f"{validity.get('minimum_valid_entailment', 0.0):.1%}",
+                )
+
+                st.write(f"**Decision:** {validity.get('label', 'Invalid').upper()}")
+                st.write(f"**Model:** `{validity.get('model_id', VALIDATOR_MODEL_ID)}`")
+                st.write(f"**Method:** {validity.get('method', 'Unavailable')}")
+                if result.get("validity_seconds") is not None:
+                    st.caption(
+                        f"Measured validity-model inference: "
+                        f"{result['validity_seconds']:.2f} s "
+                        "(excludes initial model download/loading)."
+                    )
 
             # Valid input: proceed directly to the normal analysis sections.
             else:
